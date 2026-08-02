@@ -1,0 +1,20 @@
+# Build artifacts
+*.o
+*.ko
+*.ko.xz
+*.mod
+*.mod.c
+*.symvers
+*.order
+.*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+
+# Distribution bundles
+*.tar.gz
+*.deb
+*.rpm
+
+# Logs
+*.log
