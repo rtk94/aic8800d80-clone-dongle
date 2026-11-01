@@ -23,7 +23,7 @@ module without replacing the distribution's `btusb.ko`.
 
 ```bash
 # Clone the repository and download the script, make the script executable
-git clone https://github.com/shenmintao/aic8800d80.git && cd aic8800d80 && chmod +x install.sh
+git clone https://github.com/rtk94/aic8800d80-clone-dongle.git && cd aic8800d80-clone-dongle && chmod +x install.sh
 
 # Run the installation
 sudo ./install.sh
@@ -40,9 +40,16 @@ configuration files and extension patches, so initramfs tools can include those
 files when they include the modules. Rerun the installer after updating the
 driver to rebuild DKMS modules and refresh the current kernel's initramfs.
 If the adapter only works after reloading its modules after boot, check that
-the initramfs contains its `aic8800*/` firmware directory (issue #117).
+the initramfs contains its `aic8800*/` firmware directory (upstream
+[issue #117](https://github.com/shenmintao/aic8800d80/issues/117)).
 Custom firmware paths supplied with `aic_fw_path` still need to be included
 in the initramfs by the administrator.
+
+To remove everything the installer added, run `sudo ./uninstall.sh` (add
+`--dry-run` first to see what it would remove).
+
+This repository's `install.sh` differs from upstream's; the changes are listed in
+[CHANGELOG.md](CHANGELOG.md).
 
 > For more information, please refer to the [README.md](README.md) file.
 

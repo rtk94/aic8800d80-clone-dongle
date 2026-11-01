@@ -1,125 +1,65 @@
-# Installing on the 2008 polycarbonate MacBook
+# Notes for an older polycarbonate MacBook
 
-Target: black polycarbonate MacBook (MacBook4,1 / 3,1 / 2,1 era, Core 2 Duo).
+The maintainer has run this adapter on a late-2007 black polycarbonate MacBook
+(2.4 GHz Core 2 Duo, 2 GB of RAM, shipped with Mac OS X 10.5 Leopard) running Debian 13
+(x86_64), with the older code this repository carried before the 2026-11-01 sync
+(kernels 6.12.101 and 6.12.107). Its model identifier has not been checked. The current
+code has not been run on it yet.
 
-## Before you start: what to expect
+## What to expect
 
-The dongle's Wi-Fi 6 radio **cannot deliver Wi-Fi 6 speeds on this machine.** These
-MacBooks have USB 2.0 only — 480 Mb/s of signalling, which in practice means roughly
-**150–250 Mb/s of real TCP throughput** through the USB stack, regardless of what the
-radio negotiates. The link may report a 1200 Mb/s PHY rate; the bus is the ceiling.
+This MacBook only has USB 2.0, whose signalling rate is 480 Mb/s. Real throughput
+through a USB 2.0 Wi-Fi adapter is lower than that, whatever rate the radio reports.
+**How much lower has not been measured on this machine;** see
+[Measure throughput](#measure-throughput). Do not expect Wi-Fi 6 speeds.
 
-It is still very likely worth doing:
+## Before you start
 
-- The built-in BCM4321 needs either `b43` (no usable 802.11n) or the out-of-tree `wl`
-  blob (breaks on kernel updates, no WPA3).
-- The AIC8800D80 gives you WPA3, reliable association with modern APs, clean 5 GHz,
-  and 2–3× the practical throughput of a flaky 11n link.
-- Bluetooth comes along for free via `btusb`.
+1. **Use a wired connection for the install.** The installer downloads packages, and
+   the adapter has no driver until it finishes. The built-in Ethernet port works, as
+   does USB tethering from a phone.
+2. **Check the architecture:**
+   ```bash
+   uname -m        # x86_64 or i686
+   ```
+   Everything here was done on `x86_64`. Some early Intel Macs have 32-bit EFI firmware,
+   which makes installing a 64-bit system harder; check your model. Debian 13 has no
+   i386 kernel or installer, so a 32-bit system means an older release or another
+   distribution. The driver's Makefile maps `i?86` to `i386`, but **a 32-bit build has
+   not been tried.**
 
-So: expect "reliable ~200 Mb/s," not "Wi-Fi 6."
+## Install
 
-## Step 0 — bootstrap networking
+Follow the [README](README.md#install): `sudo ./install.sh`. It installs the headers
+metapackage (`linux-headers-amd64` on Debian). That matters on this machine in
+particular: on the MacBook the metapackage was missing, so after a kernel update from
+6.12.101 to 6.12.107 DKMS had no headers to build against, skipped the rebuild without
+any error, and the adapter stopped working until the headers were installed.
 
-The MacBook has no working Wi-Fi until this driver is built, and you need the network
-to install the build tools. **Use the built-in Gigabit Ethernet port** for the install.
-(Alternatively, tether a phone over USB.)
+## Things seen on the MacBook
 
-## Step 1 — check what you're running
+- **NetworkManager switched the default route to the dongle** as soon as it connected,
+  so the laptop's address changed and an SSH session to it dropped. If you work on the
+  machine over SSH, expect that, or lower the dongle connection's priority.
+- **`dkms` is in `/usr/sbin`**, which is not on the `PATH` of non-interactive SSH
+  sessions, so `ssh <host> dkms status` reports "command not found". Use
+  `ssh <host> sudo dkms status`.
+- **The built-in Wi-Fi card** (a Broadcom card on this machine, according to the
+  maintainer's earlier notes) stays present. To keep NetworkManager from using it, you
+  can unload and blacklist its driver; which driver that is depends on the card and on
+  what is installed (`lspci -k` shows it).
 
-```bash
-uname -r                    # kernel version
-uname -m                    # x86_64 or i686
-cat /etc/os-release         # distro
-```
+## Measure throughput
 
-`uname -m` matters. All Core 2 Duo MacBooks are 64-bit capable, but these machines have
-**32-bit EFI**, so many people end up on a 32-bit install. If you see `i686`:
-
-- The driver source is architecture-neutral and the Makefile already maps `i.86` → `i386`,
-  so it should build — but this combination is far less tested than x86_64. Budget time
-  for compile errors on 32-bit.
-- Debian 13 no longer ships an i386 kernel/installer. If you're on 32-bit you're on
-  Debian 12, MX/antiX, or similar.
-
-If you're on `x86_64`, this is the same path that already works on the desktop.
-
-## Step 2 — install build dependencies
-
-```bash
-# Debian / Ubuntu / MX / antiX
-sudo apt update
-sudo apt install -y dkms build-essential linux-headers-$(uname -r) \
-                    usb-modeswitch usbutils rfkill wireless-tools
-
-# Fedora
-sudo dnf install -y dkms kernel-devel-$(uname -r) gcc make usb_modeswitch usbutils
-
-# Arch
-sudo pacman -S --needed dkms base-devel linux-headers usb_modeswitch usbutils
-```
-
-The critical one is `linux-headers-$(uname -r)` — it must match the **running** kernel
-exactly, not just "the latest headers."
-
-## Step 3 — run the installer
-
-From this directory, on the MacBook:
+Not done yet; tracked in [ROADMAP.md](ROADMAP.md). Install `iperf3` on the MacBook and
+on another machine on the same network, start `iperf3 -s` on the other machine, then on
+the MacBook:
 
 ```bash
-sudo ./install.sh
+iperf3 -c <SERVER_ADDRESS> -t 30          # MacBook sends
+iperf3 -c <SERVER_ADDRESS> -t 30 -R       # MacBook receives
 ```
 
-It detects the package manager, removes conflicting `aic8800*` firmware directories,
-installs firmware to `/lib/firmware`, the udev rules to `/lib/udev/rules.d/`, the
-mode-switch config to `/etc/usb_modeswitch.d/1111:1111`, registers the tree with DKMS,
-and builds.
-
-## Step 4 — verify
-
-```bash
-lsusb                       # before: 1111:1111  -> after modeswitch: a69c:8d80/8d81/8d83
-lsmod | grep aic            # aic8800_fdrv + aic_load_fw loaded
-ip link                     # a new wlanN interface
-dmesg | grep -iE 'aic|rwnx' # firmware load messages
-hciconfig -a                # Bluetooth hci0
-```
-
-## Step 5 — measure, so the USB 2.0 ceiling is a known quantity, not a surprise
-
-```bash
-iperf3 -c <a machine on your LAN>       # expect ~150-250 Mb/s
-```
-
-Also watch CPU during a transfer — a Core 2 Duo pushing 200 Mb/s through a
-software-heavy USB Wi-Fi driver will show real load. If one core pegs, that's the
-bottleneck, not the radio.
-
-## MacBook-specific gotchas
-
-- **Port choice.** Use the port *not* shared with the built-in iSight/keyboard hub if
-  you see enumeration flakiness. Try both ports before concluding anything.
-- **Power.** The dongle must stay within the 500 mA USB 2.0 budget. If you see random
-  re-enumeration under load, a powered hub rules the power supply in or out.
-- **Disable the built-in radio** once this works, so NetworkManager doesn't fight over
-  the default route:
-  ```bash
-  sudo modprobe -r wl b43 b43legacy ssb 2>/dev/null
-  echo -e "blacklist wl\nblacklist b43\nblacklist b43legacy" | sudo tee /etc/modprobe.d/blacklist-macbook-wifi.conf
-  ```
-- **Thermals.** These machines run hot and the GPU/CPU throttle. Sustained transfers on
-  a 2008 chassis will heat-soak; that's the machine, not the driver.
-- **Kernel updates** rebuild the module automatically via DKMS. Verify after each update
-  with `sudo dkms status`.
-
-## If the build fails on 32-bit
-
-Capture the log and bring it back:
-
-```bash
-sudo dkms build aic8800/1.0.0 -k $(uname -r)
-cat /var/lib/dkms/aic8800/1.0.0/build/make.log
-```
-
-The likely failure classes are 64-bit division on 32-bit (`__udivdi3` link errors) and
-pointer/`int` cast warnings promoted to errors. Both are fixable in the source.
+Run each a few times, close to the access point, and note the access point's band and
+channel width. Watch CPU use during the transfer (`top`): on a Core 2 Duo the CPU may
+be the limit rather than the USB bus, and this shows which. Please post results in an issue (see [CONTRIBUTING.md](CONTRIBUTING.md)).

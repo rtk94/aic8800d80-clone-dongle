@@ -5,6 +5,33 @@
 # Run this script to diagnose the problem with the DKMS
 #############################################################################
 
+# Output is meant to be pasted into public bug reports, so mask hardware
+# addresses, serial numbers, IPv4 addresses, the user name, the host name
+# and home directory paths. Set AIC_DIAG_RAW=1 to see unmasked output.
+sanitize_output() {
+    if [ "${AIC_DIAG_RAW:-0}" = 1 ]; then
+        cat
+        return
+    fi
+    local user="${SUDO_USER:-${USER:-}}" host
+    host="$(hostname 2>/dev/null || true)"
+    local -a expr=(
+        -e 's/([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}/<MAC>/g'
+        -e 's/wlx[0-9A-Fa-f]{12}/wlx<MAC>/g'
+        -e 's/(Serial(Number)?[=: ]+)[^ ,]+/\1<SERIAL>/g'
+        -e 's#/home/[^/[:space:]]+#/home/<user>#g'
+        -e 's/(^|[^0-9.])([0-9]{1,3}\.){3}[0-9]{1,3}($|[^0-9.])/\1<IP>\3/g'
+    )
+    if [ -n "$user" ] && [ "$user" != root ]; then
+        expr+=(-e "s/\\b${user}\\b/<user>/g")
+    fi
+    if [ -n "$host" ]; then
+        expr+=(-e "s/\\b${host}\\b/<host>/g")
+    fi
+    sed -E "${expr[@]}"
+}
+
+{
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║           DIAGNOSTIC BUILD SCRIPT - AIC8800D80 DRIVER          ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
@@ -19,7 +46,11 @@ NC='\033[0m'
 
 DRV_NAME="aic8800"
 DRV_VERSION="1.0.0"
-INSTALL_LOG="/tmp/aic8800d80_install.log"
+INSTALL_LOG="/var/log/aic8800-install.log"
+# Installers before this change wrote their log to /tmp.
+if [ ! -f "$INSTALL_LOG" ] && [ -f /tmp/aic8800d80_install.log ]; then
+    INSTALL_LOG="/tmp/aic8800d80_install.log"
+fi
 
 read_dkms_conf_value() {
     local key="$1"
@@ -89,6 +120,12 @@ if [ "${#DKMS_SOURCE_DIRS[@]}" -gt 0 ]; then
         echo "Content:"
         ls -la "$source_dir/"
         echo ""
+
+        if [ -r "$source_dir/SOURCE_REVISION" ]; then
+            echo "Installed source revision:"
+            cat "$source_dir/SOURCE_REVISION"
+            echo ""
+        fi
 
         echo "Checking drivers/aic8800 inside DKMS:"
         if [ -d "$source_dir/drivers/aic8800" ]; then
@@ -190,3 +227,4 @@ if command -v dkms >/dev/null 2>&1; then
 else
     echo -e "${RED}✗${NC} dkms command not found"
 fi
+} 2>&1 | sanitize_output
