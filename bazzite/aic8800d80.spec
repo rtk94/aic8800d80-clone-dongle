@@ -1,11 +1,16 @@
-%global commit 6b8cb98e969b04236f8726f7591393a040171735
+%global commit 3e9a02549bc98d350bff1e0fb0501f841f9d8e55
 %global shortcommit %(echo %{commit} | cut -c1-7)
+%global snapdate 20260924
+%global debug_package %{nil}
 %{!?kver:%global kver %(uname -r)}
 
 Name:           aic8800d80
-Version:        %{shortcommit}
+# Versions before 2026-09-24 were bare commit hashes, which rpm does not
+# order by commit history. Epoch 1 sorts every snapshot version after them.
+Epoch:          1
+Version:        1.0.0^%{snapdate}git%{shortcommit}
 Release:        1%{?dist}
-Summary:        AIC8800D80 USB Wi-Fi and Bluetooth driver
+Summary:        AIC8800 USB Wi-Fi, Bluetooth firmware, and ZLP quirk driver
 
 License:        GPL-2.0-only
 URL:            https://github.com/shenmintao/aic8800d80
@@ -17,16 +22,16 @@ BuildRequires:  kernel-devel-uname-r = %{kver}
 
 Requires:       kernel-uname-r = %{kver}
 Requires:       /usr/bin/eject
-Requires:       /usr/sbin/usb_modeswitch
-Requires:       /usr/sbin/rfkill
+Requires:       usb_modeswitch
 Requires(post): /usr/sbin/depmod
 Requires(postun): /usr/sbin/depmod
 
 %description
-Out-of-tree AIC8800D80 USB driver with Wi-Fi support, Bluetooth firmware
-loading, udev mode-switch rules, and all firmware variants shipped by the
-upstream repository. Bluetooth interfaces are handled by the standard Linux
-btusb driver after aic_load_fw initializes the device.
+Out-of-tree AIC8800 USB driver with Wi-Fi support, Bluetooth firmware loading,
+udev mode-switch rules, and all firmware variants shipped by the upstream
+repository. Combo adapters use the standard Linux btusb transport driver. A
+device-scoped companion module supplies the required ACL bulk TX ZLP behavior
+for USB device 368b:8d81 without replacing the distribution btusb module.
 
 %prep
 %autosetup -n %{name}-%{commit}
@@ -45,6 +50,10 @@ install -Dpm0644 \
 install -Dpm0644 \
   drivers/aic8800/aic_load_fw/aic_load_fw.ko \
   %{buildroot}/usr/lib/modules/%{kver}/kernel/drivers/net/wireless/aic8800/aic_load_fw.ko
+
+install -Dpm0644 \
+  drivers/aic8800/aic_zlp_quirk/aic_zlp_quirk.ko \
+  %{buildroot}/usr/lib/modules/%{kver}/kernel/drivers/bluetooth/aic8800/aic_zlp_quirk.ko
 
 install -Dpm0644 \
   aic.rules \
@@ -67,12 +76,41 @@ cp -a fw/aic8800* %{buildroot}/usr/lib/firmware/
 %dir /usr/lib/modules/%{kver}/kernel/drivers/net/wireless/aic8800
 /usr/lib/modules/%{kver}/kernel/drivers/net/wireless/aic8800/aic8800_fdrv.ko
 /usr/lib/modules/%{kver}/kernel/drivers/net/wireless/aic8800/aic_load_fw.ko
+/usr/lib/modules/%{kver}/kernel/drivers/bluetooth/aic8800/aic_zlp_quirk.ko
 /usr/lib/udev/rules.d/90-aic8800-mode-switch.rules
 %config(noreplace) /etc/usb_modeswitch.d/1111:1111
 /usr/lib/firmware/aic8800*
 
 %changelog
-* Tue Jul 14 2026 Shen Mintao <shenmintao@gmail.com> - 6b8cb98-1
-- Build the current bluetooth branch without the removed aic_btusb module.
+* Thu Sep 24 2026 Shen Mintao <shenmintao@gmail.com> - 1:1.0.0^20260924git3e9a025-1
+- Version snapshots as 1.0.0^<date>git<commit> with Epoch 1. The previous
+  commit-hash versions do not sort in commit order, so rpm could treat a
+  newer snapshot as an older package.
+
+* Thu Sep 24 2026 Shen Mintao <shenmintao@gmail.com> - 3e9a025-1
+- Build the current main branch, which adds the Linux 7.1+ TDLS discovery
+  response length fix, the SUN60IW2P1 USB transfer settings, OpenWrt
+  cfg80211 backport version handling and the 6.12 stable
+  set_monitor_channel() fix.
+
+* Fri Aug 21 2026 Heyde Moura <moura.heyde@gmail.com> - e93a7d2-1
+- Build the current main branch, which carries the Linux 7.2 cfg80211 and
+  strncpy() fixes needed to compile on Bazzite 44.
+
+* Tue Jul 28 2026 ccyuen1 - 13baa9b-2
+- Disable automatic creation of debuginfo packages to fix issue #77.
+- Require usb_modeswitch as package dependency instead of file dependency to fix issue #77.
+
+* Sat Jul 25 2026 Shen Mintao <shenmintao@gmail.com> - 13baa9b-1
+- Unify Wi-Fi and standard-btusb Bluetooth support in one package.
+- Add the device-scoped 368b:8d81 ACL bulk TX ZLP companion module.
+- Clean up obsolete aic_btusb and issue #63 diagnostic installations.
+
+* Fri Jul 24 2026 Shen Mintao <shenmintao@gmail.com> - 88dbc0a-1
+- Use the unified Wi-Fi and Bluetooth installer/package description.
+- Keep Bluetooth transport on the standard Linux btusb driver.
+
+* Tue Jul 14 2026 Shen Mintao <shenmintao@gmail.com> - d10bc52-1
+- Build the current main branch without the legacy custom Bluetooth module.
 - Package all firmware variants and current mode-switch rules.
-- Remove the obsolete custom Bluetooth module integration.
+- Remove obsolete Bluetooth-specific configuration from the Wi-Fi package.
