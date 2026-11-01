@@ -27,7 +27,8 @@ readonly MODULE_NAME="aic8800_fdrv"
 readonly LOG_FILE="/tmp/aic8800d80_install.log"
 
 # Script directory (where the script is located)
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
 
 #############################################################################
 # Logging and Output Functions
@@ -88,6 +89,7 @@ run_logged() {
 # Error Handling
 #############################################################################
 
+# shellcheck disable=SC2317  # invoked indirectly through the ERR trap
 cleanup_on_error() {
     local exit_code=$?
     trap - ERR
@@ -216,7 +218,8 @@ is_volumio() {
 }
 
 kernel_build_tree_available() {
-    local kernel_build_dir="/lib/modules/$(uname -r)/build"
+    local kernel_build_dir
+    kernel_build_dir="/lib/modules/$(uname -r)/build"
 
     [ -d "$kernel_build_dir" ] && [ -r "$kernel_build_dir/Makefile" ]
 }
@@ -299,7 +302,8 @@ install_dependencies() {
 }
 
 check_kernel_build_tree() {
-    local kernel_build_dir="/lib/modules/$(uname -r)/build"
+    local kernel_build_dir
+    kernel_build_dir="/lib/modules/$(uname -r)/build"
 
     if kernel_build_tree_available; then
         return 0
@@ -419,7 +423,8 @@ install_firmware() {
     print_info "Installing firmware for all chip variants..."
     for fw_dir in "${fw_dirs[@]}"; do
         if [ -d "$fw_dir" ]; then
-            local fw_name=$(basename "$fw_dir")
+            local fw_name
+            fw_name=$(basename "$fw_dir")
             local fw_dest="/lib/firmware/$fw_name"
             print_info "Copying $fw_name firmware to $fw_dest..."
             cp -r "$fw_dir" "$fw_dest" >> "$LOG_FILE" 2>&1
@@ -643,7 +648,7 @@ load_module() {
         # Verify module is loaded
         print_info "Waiting for module to initialize..."
         local module_loaded=false
-        for i in {1..10}; do
+        for _ in {1..10}; do
             if lsmod | grep -q "$MODULE_NAME"; then
                 module_loaded=true
                 break
@@ -778,43 +783,43 @@ show_final_instructions() {
     echo "1. Connect your AIC8800 USB Wi-Fi or Wi-Fi/Bluetooth adapter"
     echo ""
     echo "2. Check if the adapter is detected:"
-    echo "   ${BLUE}lsusb | grep -i aic${NC}"
-    echo "   ${BLUE}iwconfig${NC}"
-    echo "   ${BLUE}ip link show${NC}"
+    echo -e "   ${BLUE}lsusb | grep -i aic${NC}"
+    echo -e "   ${BLUE}iwconfig${NC}"
+    echo -e "   ${BLUE}ip link show${NC}"
     echo ""
     echo "3. View kernel messages about the driver:"
-    echo "   ${BLUE}sudo dmesg | grep aic8800${NC}"
-    echo "   ${BLUE}sudo dmesg | grep -iE 'bluetooth|btusb|hci'${NC}"
+    echo -e "   ${BLUE}sudo dmesg | grep aic8800${NC}"
+    echo -e "   ${BLUE}sudo dmesg | grep -iE 'bluetooth|btusb|hci'${NC}"
     echo ""
     echo "4. Connect to a WiFi network:"
-    echo "   ${BLUE}nmcli device wifi list${NC}"
-    echo "   ${BLUE}nmcli device wifi connect \"SSID\" password \"PASSWORD\"${NC}"
+    echo -e "   ${BLUE}nmcli device wifi list${NC}"
+    echo -e "   ${BLUE}nmcli device wifi connect \"SSID\" password \"PASSWORD\"${NC}"
     echo ""
     echo "5. For a combo adapter, check Bluetooth:"
-    echo "   ${BLUE}bluetoothctl list${NC}"
-    echo "   ${BLUE}bluetoothctl scan on${NC}"
+    echo -e "   ${BLUE}bluetoothctl list${NC}"
+    echo -e "   ${BLUE}bluetoothctl scan on${NC}"
     echo ""
     echo -e "${CYAN}Troubleshooting:${NC}"
     echo ""
     echo "• Check DKMS status:"
-    echo "  ${BLUE}dkms status${NC}"
+    echo -e "  ${BLUE}dkms status${NC}"
     echo ""
     echo "• Check loaded modules:"
-    echo "  ${BLUE}lsmod | grep -E 'aic|btusb'${NC}"
-    echo "  ${BLUE}cat /sys/module/aic_zlp_quirk/parameters/{hook,injections}${NC}"
+    echo -e "  ${BLUE}lsmod | grep -E 'aic|btusb'${NC}"
+    echo -e "  ${BLUE}cat /sys/module/aic_zlp_quirk/parameters/{hook,injections}${NC}"
     echo ""
     echo "• Manually load the Wi-Fi module and firmware loader:"
-    echo "  ${BLUE}sudo modprobe aic8800_fdrv${NC}"
+    echo -e "  ${BLUE}sudo modprobe aic8800_fdrv${NC}"
     echo ""
     echo "• View detailed logs:"
-    echo "  ${BLUE}cat $LOG_FILE${NC}"
+    echo -e "  ${BLUE}cat $LOG_FILE${NC}"
     echo ""
     echo -e "${YELLOW}Known Limitations:${NC}"
     echo "• Secure Boot may prevent module loading (disable in BIOS if needed)"
     echo ""
     echo -e "${CYAN}Uninstallation:${NC}"
-    echo "  ${BLUE}sudo dkms remove ${DRV_NAME}/${DRV_VERSION} --all${NC}"
-    echo "  ${BLUE}sudo rm -rf /lib/firmware/aic8800*${NC}"
+    echo -e "  ${BLUE}sudo dkms remove ${DRV_NAME}/${DRV_VERSION} --all${NC}"
+    echo -e "  ${BLUE}sudo rm -rf /lib/firmware/aic8800*${NC}"
     echo ""
 }
 
@@ -837,7 +842,7 @@ main() {
     
     log_message "START" "Installation started"
     log_message "INFO" "Kernel: $(uname -r)"
-    log_message "INFO" "Distribution: $(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d= -f2 | tr -d '"')"
+    log_message "INFO" "Distribution: $(grep PRETTY_NAME /etc/os-release 2>/dev/null | cut -d= -f2 | tr -d '"')"
     
     # Step 1: Check root privileges
     check_root
