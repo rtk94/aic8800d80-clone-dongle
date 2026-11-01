@@ -50,7 +50,7 @@ for target in "${targets[@]}"; do
     rc=0
     output=$("$engine" run --rm -v "$repo:/src:ro" \
         "$image" bash /src/tests/build/build-in-container.sh "$target" 2>&1) || rc=$?
-    grep -E '^RESULT|error:' <<< "$output" || echo "RESULT target=$target result=ERROR (no result line; container exit $rc)"
+    grep -E '^RESULT|^  [0-9]+ WARNING|error:' <<< "$output" || echo "RESULT target=$target result=ERROR (no result line; container exit $rc)"
     [ "$rc" = 0 ] || status=1
 done
 exit "$status"

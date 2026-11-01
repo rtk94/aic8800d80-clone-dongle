@@ -91,6 +91,10 @@ fi
 modules=$(find /tmp/build -name '*.ko' -printf '%f ' | tr -s ' ')
 warnings=$(grep -c 'warning:' "$log" || true)
 echo "RESULT target=$target kernel=$kver result=$result warnings=$warnings modules=${modules:-none}"
+# One line per distinct warning: source file and compiler flag.
+grep -E 'warning:' "$log" |
+    sed -E 's#^/tmp/build/aic8800/##; s#^([^:]+):[0-9]+:[0-9]+: warning: .*\[(-W[^]]+)\]$#WARNING \1 \2#; /^WARNING/!s#^.*warning: *#WARNING (other) #' |
+    sort | uniq -c | sed 's/^ */  /' || true
 if [ "$result" = FAIL ]; then
     grep -E 'error:' "$log" | head -20
     exit 1
