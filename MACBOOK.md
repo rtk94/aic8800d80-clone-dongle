@@ -42,7 +42,7 @@ cat /etc/os-release         # distro
 - Debian 13 no longer ships an i386 kernel/installer. If you're on 32-bit you're on
   Debian 12, MX/antiX, or similar.
 
-If you're on `x86_64`, this is the same path that already works on the desktop.
+If you're on `x86_64`, this is the same build path as any other x86_64 machine.
 
 ## Step 2 — install build dependencies
 
