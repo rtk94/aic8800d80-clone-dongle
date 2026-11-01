@@ -108,8 +108,9 @@ There is also a written record of the vendor's position: Radxa's commit
 that "AIC has agreed to include GPLv2 notice in future code releases". Upstream's README
 cites the same commit.
 
-Files written for this repository are distributed under the same GPL-2.0 terms as the
-rest of the tree.
+Upstream states the driver source is `GPL-2.0-only`. Files written for this repository,
+and this repository's changes to upstream's files, are distributed under the same terms,
+`GPL-2.0-only`, so that they can be contributed upstream without a license change.
 
 ## Firmware blobs
 
