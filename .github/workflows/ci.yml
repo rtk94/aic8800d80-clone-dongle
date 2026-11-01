@@ -1,0 +1,69 @@
+# What CI proves: the scripts pass lint and their unit tests, the repository
+# contains no personal identifiers (generic patterns only), the driver
+# compiles against each listed kernel's headers, and install.sh and
+# uninstall.sh work on each listed distribution in an unprivileged container.
+# It does not prove that any adapter works: no hardware is attached here.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly, to notice when a distribution's current kernel breaks the build.
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: lint, unit tests, privacy scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the privacy scan reads commit messages
+      - name: Install linters
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck shfmt
+      - name: make test
+        run: make test
+
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - debian13
+          - debian13-6.12.100
+          - debian13-6.12.101
+          - debian12
+          - ubuntu2404
+          - fedora
+          - arch
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile against ${{ matrix.target }} headers
+        run: ./tests/build/run.sh ${{ matrix.target }}
+
+  distro-install:
+    name: install/uninstall (${{ matrix.distro }})
+    # Slow and network-heavy: run on demand and weekly, not on every push.
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [debian, ubuntu, fedora, arch, opensuse]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run install.sh and uninstall.sh in ${{ matrix.distro }}
+        run: ./tests/distros/run.sh ${{ matrix.distro }}
+      - name: Keep logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: distro-${{ matrix.distro }}
+          path: tests/distros/out/${{ matrix.distro }}/
