@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Driver problem (upstream)
+    url: https://github.com/shenmintao/aic8800d80/issues
+    about: Driver crashes, firmware errors and connection problems that also happen with upstream's code are best reported to upstream, where the driver is maintained.
+  - name: How to report, and how to clean logs
+    url: https://github.com/rtk94/aic8800d80-clone-dongle/blob/main/CONTRIBUTING.md
+    about: What to include in a report and how to remove personal identifiers first.
