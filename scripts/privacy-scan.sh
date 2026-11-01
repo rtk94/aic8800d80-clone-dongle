@@ -3,8 +3,8 @@
 # Scan the repository for personal identifiers before pushing.
 #
 # Checks tracked files (except the vendor driver and firmware trees) and the
-# messages of this repository's own commits (the first-parent history, which
-# leaves out upstream's merged history) for:
+# message of every commit in the history, upstream's merged history included,
+# for:
 #   - MAC addresses (except the documentation prefix 02:00:00)
 #   - private IPv4 addresses (10/8, 172.16/12, 192.168/16)
 #   - home directory paths (/home/<name>, /Users/<name>)
@@ -49,7 +49,9 @@ while IFS= read -r cached; do
     report "compiled or cache file is tracked: $cached"
 done < <(printf '%s\n' "${files[@]}" | grep -E '(^|/)__pycache__/|\.py[co]$' || true)
 
-messages="$(git log --first-parent --format='%h %B' HEAD)"
+# All commits, not only the first-parent line: after pull requests are merged,
+# this repository's own commits sit behind merge commits.
+messages="$(git log --format='%h %B' HEAD)"
 for pattern in "${patterns[@]}"; do
     while IFS= read -r hit; do
         report "commit message: $hit"
