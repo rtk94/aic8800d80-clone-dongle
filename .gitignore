@@ -25,3 +25,6 @@ Module.symvers
 # Python bytecode caches
 __pycache__/
 *.pyc
+
+# Distribution test results
+tests/distros/out/
