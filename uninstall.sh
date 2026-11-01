@@ -31,7 +31,7 @@ DRY_RUN=0
 case "${1:-}" in
     "") ;;
     --dry-run) DRY_RUN=1 ;;
-    -h|--help)
+    -h | --help)
         sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
         exit 0
         ;;
@@ -61,15 +61,15 @@ firmware_path_owner() {
     [[ "$path" == /usr/* ]] && alt="${path#/usr}"
 
     if command -v dpkg > /dev/null 2>&1; then
-        owner=$(dpkg -S "$path" 2>/dev/null || dpkg -S "$alt" 2>/dev/null || true)
+        owner=$(dpkg -S "$path" 2> /dev/null || dpkg -S "$alt" 2> /dev/null || true)
         owner="${owner%%:*}"
     fi
     if [ -z "$owner" ] && command -v rpm > /dev/null 2>&1; then
-        owner=$(rpm -qf "$path" 2>/dev/null || true)
+        owner=$(rpm -qf "$path" 2> /dev/null || true)
         [[ "$owner" == *"not owned"* ]] && owner=""
     fi
     if [ -z "$owner" ] && command -v pacman > /dev/null 2>&1; then
-        owner=$(pacman -Qqo "$path" 2>/dev/null || true)
+        owner=$(pacman -Qqo "$path" 2> /dev/null || true)
     fi
     printf '%s' "$owner"
 }
@@ -86,7 +86,7 @@ done
 echo "==> Removing DKMS registrations"
 if command -v dkms > /dev/null 2>&1; then
     # "dkms status" prints "aic8800/1.0.0, <kernel>, <arch>: installed".
-    mapfile -t versions < <(dkms status 2>/dev/null | sed -nE "s#^${DRV_NAME}/([^,:]+)[,:].*#\1#p" | sort -u)
+    mapfile -t versions < <(dkms status 2> /dev/null | sed -nE "s#^${DRV_NAME}/([^,:]+)[,:].*#\1#p" | sort -u)
     for version in "${versions[@]}"; do
         run dkms remove "${DRV_NAME}/${version}" --all || echo "    dkms remove ${DRV_NAME}/${version} failed; continuing"
     done
@@ -100,7 +100,7 @@ found=0
 for src in "${DESTDIR}/usr/src/${DRV_NAME}"-*; do
     [ -d "$src" ] || continue
     # Only remove trees that are this driver, identified by their dkms.conf.
-    if grep -q "^PACKAGE_NAME=\"${DRV_NAME}\"" "$src/dkms.conf" 2>/dev/null; then
+    if grep -q "^PACKAGE_NAME=\"${DRV_NAME}\"" "$src/dkms.conf" 2> /dev/null; then
         run rm -rf "$src"
         found=1
     else
@@ -110,7 +110,7 @@ done
 [ "$found" = 0 ] && echo "    none found"
 
 echo "==> Moving firmware to a backup directory"
-mapfile -t fw_dirs < <(find "$FW_ROOT" -maxdepth 1 -name 'aic8800*' -type d 2>/dev/null | sort)
+mapfile -t fw_dirs < <(find "$FW_ROOT" -maxdepth 1 -name 'aic8800*' -type d 2> /dev/null | sort)
 to_move=()
 for dir in "${fw_dirs[@]}"; do
     owner=$(firmware_path_owner "${dir#"$DESTDIR"}")
@@ -133,15 +133,15 @@ echo "==> Removing udev rules and usb_modeswitch configuration"
 declare -A seen_rules=()
 for rules in "${RULES_FILES[@]}"; do
     # /lib and /usr/lib are the same directory on merged-/usr systems.
-    real=$(readlink -f "$rules" 2>/dev/null || echo "$rules")
+    real=$(readlink -f "$rules" 2> /dev/null || echo "$rules")
     [ -n "${seen_rules[$real]:-}" ] && continue
     seen_rules[$real]=1
     # Only remove files that are this project's rules.
-    if [ -f "$rules" ] && grep -q 'AIC8800' "$rules" 2>/dev/null; then
+    if [ -f "$rules" ] && grep -q 'AIC8800' "$rules" 2> /dev/null; then
         run rm -f "$rules"
     fi
 done
-if [ -f "$MODESWITCH_CONF" ] && grep -q 'AIC8800' "$MODESWITCH_CONF" 2>/dev/null; then
+if [ -f "$MODESWITCH_CONF" ] && grep -q 'AIC8800' "$MODESWITCH_CONF" 2> /dev/null; then
     run rm -f "$MODESWITCH_CONF"
 fi
 if command -v udevadm > /dev/null 2>&1; then
