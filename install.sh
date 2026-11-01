@@ -22,9 +22,14 @@ readonly NC='\033[0m' # No Color
 # Driver configuration
 readonly DRV_NAME="aic8800"
 readonly DRV_VERSION="1.0.0"
-readonly SRC_DIR="/usr/src/${DRV_NAME}-${DRV_VERSION}"
+# DESTDIR (default empty) prefixes every path this script writes. It exists
+# for the test suite: DKMS, package managers and module loading still act on
+# the live system and are stubbed by the tests.
+DESTDIR="${DESTDIR:-}"
+readonly DESTDIR
+readonly SRC_DIR="${DESTDIR}/usr/src/${DRV_NAME}-${DRV_VERSION}"
 readonly MODULE_NAME="aic8800_fdrv"
-readonly LOG_FILE="/var/log/aic8800-install.log"
+readonly LOG_FILE="${DESTDIR}/var/log/aic8800-install.log"
 
 # Script directory (where the script is located)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -378,8 +383,8 @@ check_kernel_build_tree() {
 #############################################################################
 
 cleanup_legacy_bluetooth_config() {
-    local legacy_conf="/etc/modprobe.d/aic8800-bt.conf"
-    local legacy_udev="/etc/udev/rules.d/90-aic8800-mode-switch.rules"
+    local legacy_conf="${DESTDIR}/etc/modprobe.d/aic8800-bt.conf"
+    local legacy_udev="${DESTDIR}/etc/udev/rules.d/90-aic8800-mode-switch.rules"
     local legacy_package
     local changed=false
 
@@ -484,9 +489,9 @@ install_firmware() {
     # deleting it would leave that package's file list out of sync.
     local -a existing_fw=()
     local existing owner
-    mapfile -t existing_fw < <(find /lib/firmware -maxdepth 1 -name 'aic8800*' -type d 2>/dev/null | sort)
+    mapfile -t existing_fw < <(find "${DESTDIR}/lib/firmware" -maxdepth 1 -name 'aic8800*' -type d 2>/dev/null | sort)
     for existing in "${existing_fw[@]}"; do
-        owner=$(firmware_path_owner "$existing")
+        owner=$(firmware_path_owner "${existing#"$DESTDIR"}")
         if [ -n "$owner" ]; then
             print_error "$existing belongs to the package '$owner'; existing firmware has not been changed."
             echo "Remove that package first if you want this installer to manage the AIC8800 firmware."
@@ -501,7 +506,7 @@ install_firmware() {
     # backup lets the previous state be restored by hand.
     if [ "${#existing_fw[@]}" -gt 0 ]; then
         local backup_dir
-        backup_dir="${FW_BACKUP_ROOT:-/var/backups}/aic8800-firmware-$(date '+%Y%m%d-%H%M%S')"
+        backup_dir="${FW_BACKUP_ROOT:-${DESTDIR}/var/backups}/aic8800-firmware-$(date '+%Y%m%d-%H%M%S')"
         print_info "Moving existing firmware to $backup_dir..."
         mkdir -p "$backup_dir"
         mv "${existing_fw[@]}" "$backup_dir/" >> "$LOG_FILE" 2>&1
@@ -509,12 +514,12 @@ install_firmware() {
 
     # Copy all firmware variants (minimal systems may not have /lib/firmware yet)
     print_info "Installing firmware for all chip variants..."
-    mkdir -p /lib/firmware
+    mkdir -p "${DESTDIR}/lib/firmware"
     for fw_dir in "${fw_dirs[@]}"; do
         if [ -d "$fw_dir" ]; then
             local fw_name
             fw_name=$(basename "$fw_dir")
-            local fw_dest="/lib/firmware/$fw_name"
+            local fw_dest="${DESTDIR}/lib/firmware/$fw_name"
             print_info "Copying $fw_name firmware to $fw_dest..."
             cp -r "$fw_dir" "$fw_dest" >> "$LOG_FILE" 2>&1
         fi
@@ -526,16 +531,16 @@ install_firmware() {
     local rules_source="${SCRIPT_DIR}/aic.rules"
     # /etc/udev/rules.d is the administrator's location; /usr may be
     # read-only (image-based distributions) and belongs to the package manager.
-    local rules_dest="/etc/udev/rules.d/aic.rules"
+    local rules_dest="${DESTDIR}/etc/udev/rules.d/aic.rules"
     local old_rules
 
     if [ -f "$rules_source" ]; then
         print_info "Installing udev rules to $rules_dest..."
-        mkdir -p /etc/udev/rules.d
+        mkdir -p "${DESTDIR}/etc/udev/rules.d"
         cp "$rules_source" "$rules_dest" >> "$LOG_FILE" 2>&1
         # Remove copies left in vendor directories by earlier installers or
         # manual installs. Same-named files there are shadowed by /etc anyway.
-        for old_rules in /usr/lib/udev/rules.d/aic.rules /lib/udev/rules.d/aic.rules; do
+        for old_rules in "${DESTDIR}/usr/lib/udev/rules.d/aic.rules" "${DESTDIR}/lib/udev/rules.d/aic.rules"; do
             if [ -f "$old_rules" ] && grep -q 'AIC8800' "$old_rules" 2>/dev/null; then
                 rm -f "$old_rules" >> "$LOG_FILE" 2>&1 || print_warning "Could not remove old rules file $old_rules."
             fi
@@ -553,11 +558,11 @@ install_firmware() {
 
     # Install usb_modeswitch configuration for AIC8800D80 "Pandora" clone
     local modeswitch_source="${SCRIPT_DIR}/usb_modeswitch/1111_1111"
-    local modeswitch_dest="/etc/usb_modeswitch.d/1111:1111"
+    local modeswitch_dest="${DESTDIR}/etc/usb_modeswitch.d/1111:1111"
 
     if [ -f "$modeswitch_source" ]; then
         print_info "Installing usb_modeswitch configuration to $modeswitch_dest..."
-        mkdir -p /etc/usb_modeswitch.d >> "$LOG_FILE" 2>&1 || true
+        mkdir -p "${DESTDIR}/etc/usb_modeswitch.d" >> "$LOG_FILE" 2>&1 || true
         cp "$modeswitch_source" "$modeswitch_dest" >> "$LOG_FILE" 2>&1
         print_success "USB modeswitch configuration installed successfully."
     else
@@ -857,7 +862,7 @@ verify_installation() {
     
     # Check firmware
     local fw_count=0
-    for fw_dir in /lib/firmware/aic8800*; do
+    for fw_dir in "${DESTDIR}"/lib/firmware/aic8800*; do
         if [ -d "$fw_dir" ]; then
             fw_count=$((fw_count + 1))
         fi
@@ -958,7 +963,11 @@ main() {
 
     # Initialize log file: owned by root, readable by all, never world-writable
     rm -f "$LOG_FILE" 2>/dev/null || true
+    mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
     install -m 0644 /dev/null "$LOG_FILE" 2>/dev/null || true
+    if [ -n "$DESTDIR" ]; then
+        print_warning "DESTDIR is set: files are written under $DESTDIR (test mode). DKMS, package and module commands still act on this system."
+    fi
 
     echo -e "${CYAN}"
     echo "╔════════════════════════════════════════════════════════════════╗"

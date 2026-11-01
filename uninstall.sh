@@ -13,13 +13,18 @@
 set -euo pipefail
 
 readonly DRV_NAME="aic8800"
-readonly FW_ROOT="/lib/firmware"
-readonly LOG_FILE="/var/log/aic8800-install.log"
-readonly MODESWITCH_CONF="/etc/usb_modeswitch.d/1111:1111"
+# DESTDIR (default empty) prefixes every path this script removes. It exists
+# for the test suite; dkms, modprobe and initramfs tools still act on the
+# live system and are stubbed by the tests.
+DESTDIR="${DESTDIR:-}"
+readonly DESTDIR
+readonly FW_ROOT="${DESTDIR}/lib/firmware"
+readonly LOG_FILE="${DESTDIR}/var/log/aic8800-install.log"
+readonly MODESWITCH_CONF="${DESTDIR}/etc/usb_modeswitch.d/1111:1111"
 readonly -a RULES_FILES=(
-    /etc/udev/rules.d/aic.rules
-    /usr/lib/udev/rules.d/aic.rules
-    /lib/udev/rules.d/aic.rules
+    "${DESTDIR}/etc/udev/rules.d/aic.rules"
+    "${DESTDIR}/usr/lib/udev/rules.d/aic.rules"
+    "${DESTDIR}/lib/udev/rules.d/aic.rules"
 )
 
 DRY_RUN=0
@@ -36,7 +41,7 @@ case "${1:-}" in
         ;;
 esac
 
-if [ "$DRY_RUN" = 0 ] && [ "$EUID" -ne 0 ]; then
+if [ "$DRY_RUN" = 0 ] && [ -z "$DESTDIR" ] && [ "$EUID" -ne 0 ]; then
     echo "This script must be run as root (sudo ./uninstall.sh), or with --dry-run." >&2
     exit 1
 fi
@@ -92,7 +97,7 @@ fi
 
 echo "==> Removing DKMS source trees"
 found=0
-for src in "/usr/src/${DRV_NAME}"-*; do
+for src in "${DESTDIR}/usr/src/${DRV_NAME}"-*; do
     [ -d "$src" ] || continue
     # Only remove trees that are this driver, identified by their dkms.conf.
     if grep -q "^PACKAGE_NAME=\"${DRV_NAME}\"" "$src/dkms.conf" 2>/dev/null; then
@@ -108,7 +113,7 @@ echo "==> Moving firmware to a backup directory"
 mapfile -t fw_dirs < <(find "$FW_ROOT" -maxdepth 1 -name 'aic8800*' -type d 2>/dev/null | sort)
 to_move=()
 for dir in "${fw_dirs[@]}"; do
-    owner=$(firmware_path_owner "$dir")
+    owner=$(firmware_path_owner "${dir#"$DESTDIR"}")
     if [ -n "$owner" ]; then
         echo "    leaving $dir (owned by package '$owner')"
     else
@@ -116,7 +121,7 @@ for dir in "${fw_dirs[@]}"; do
     fi
 done
 if [ "${#to_move[@]}" -gt 0 ]; then
-    backup_dir="/var/backups/aic8800-firmware-$(date '+%Y%m%d-%H%M%S')"
+    backup_dir="${DESTDIR}/var/backups/aic8800-firmware-$(date '+%Y%m%d-%H%M%S')"
     run mkdir -p "$backup_dir"
     run mv "${to_move[@]}" "$backup_dir/"
     echo "    firmware saved in $backup_dir; delete it when no longer needed"
