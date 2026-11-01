@@ -185,7 +185,7 @@ Before the 2026-11-01 sync with upstream, this repository carried a copy of upst
 older `bluetooth` branch (`archive/bluetooth-final`); the maintainer's installed copy also
 had a local kernel-compatibility patch. With that older code the maintainer ran the
 adapter on their main computer under Debian 13 (kernel versions not recorded; the first
-commit records successful builds on 6.12.95, 6.12.96 and 6.12.100) and on a 2008 MacBook
+commit records successful builds on 6.12.95, 6.12.96 and 6.12.100) and on a late-2007 MacBook
 (6.12.101 and 6.12.107). Those runs say nothing about the current code.
 
 For reports about upstream's code on other systems, see upstream's README and issues.
@@ -211,7 +211,7 @@ the driver will bind; it does not mean the adapter has been tested.
 
 ## Platform notes
 
-- [MACBOOK.md](MACBOOK.md): notes for 2008-era polycarbonate MacBooks (USB 2.0 only).
+- [MACBOOK.md](MACBOOK.md): notes for a late-2007 polycarbonate MacBook (USB 2.0 only).
 - `bazzite/`: upstream's RPM spec for Bazzite. It downloads and builds **upstream's**
   code, not this repository's, and is untested here.
 - [INSTALL_ARCH.md](INSTALL_ARCH.md) and [OPENWRT.md](OPENWRT.md): upstream's notes for

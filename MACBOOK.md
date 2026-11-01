@@ -1,13 +1,14 @@
-# Notes for 2008-era polycarbonate MacBooks
+# Notes for an older polycarbonate MacBook
 
-The maintainer has run this adapter on a 2008 black polycarbonate MacBook running
-Debian 13 (x86_64), with the older code this repository carried before the 2026-11-01
-sync (kernels 6.12.101 and 6.12.107). The exact model identifier was not recorded. The
-current code has not been run on it yet.
+The maintainer has run this adapter on a late-2007 black polycarbonate MacBook
+(2.4 GHz Core 2 Duo, 2 GB of RAM, shipped with Mac OS X 10.5 Leopard) running Debian 13
+(x86_64), with the older code this repository carried before the 2026-11-01 sync
+(kernels 6.12.101 and 6.12.107). Its model identifier has not been checked. The current
+code has not been run on it yet.
 
 ## What to expect
 
-These MacBooks only have USB 2.0, whose signalling rate is 480 Mb/s. Real throughput
+This MacBook only has USB 2.0, whose signalling rate is 480 Mb/s. Real throughput
 through a USB 2.0 Wi-Fi adapter is lower than that, whatever rate the radio reports.
 **How much lower has not been measured on this machine;** see
 [Measure throughput](#measure-throughput). Do not expect Wi-Fi 6 speeds.
