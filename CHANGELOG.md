@@ -67,6 +67,8 @@ All notable changes to this repository. Upstream's own changes are in its histor
 - Documentation: rewritten `README.md`, corrected `NOTICE.md`, `MACBOOK.md` limited to
   what has been observed, `docs/mode-switch.md`, `CONTRIBUTING.md`, `KNOWN_ISSUES.md`,
   `ROADMAP.md` and this file.
+- GitHub issue forms (bug report, new hardware report, feature request) and a pull
+  request template.
 
 ## 2026-08-02
 
