@@ -118,7 +118,9 @@ The files under `fw/` are **proprietary binary firmware** produced by AICSemi. T
 - not covered by the GPL-2.0 license above,
 - shipped without any explicit redistribution grant,
 - redistributed here because there is no other way to make the hardware function, and
-  because every other packaging of this driver does the same.
+  because other packagings of this driver do the same (upstream, and
+  [radxa-pkg/aic8800](https://github.com/radxa-pkg/aic8800), which ships the same
+  firmware directories).
 
 This is the same posture as most out-of-tree wireless drivers, but it is a posture, not
 a permission. Anyone redistributing this tree, including in a distro package, is
