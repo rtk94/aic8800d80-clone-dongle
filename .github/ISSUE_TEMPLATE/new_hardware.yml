@@ -1,0 +1,59 @@
+name: New hardware report
+description: An adapter, USB ID or kernel that the README does not cover yet, or one that behaves differently from what it says.
+labels: [hardware-report]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. Reports like this are how the device table grows. Before pasting logs, read [CONTRIBUTING.md](https://github.com/rtk94/aic8800d80-clone-dongle/blob/main/CONTRIBUTING.md#before-you-post-anything-clean-your-logs).
+  - type: input
+    id: product
+    attributes:
+      label: Product name and where it was sold
+      description: For example "AX900 Wi-Fi 6 USB adapter, online marketplace". "Unknown" is fine.
+  - type: input
+    id: system
+    attributes:
+      label: Distribution, version and kernel
+      description: '`grep PRETTY_NAME /etc/os-release` and `uname -r`'
+    validations:
+      required: true
+  - type: textarea
+    id: smoke-early
+    attributes:
+      label: Output of `sudo ./scripts/hw-smoke.sh` right after plugging in
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: smoke-late
+    attributes:
+      label: The same, about a minute later (if anything changed)
+      render: text
+  - type: dropdown
+    id: wifi
+    attributes:
+      label: Does Wi-Fi work?
+      options: ["Yes", "No", "Not tried"]
+    validations:
+      required: true
+  - type: dropdown
+    id: bluetooth
+    attributes:
+      label: Does Bluetooth work?
+      options: ["Yes", "No", "The adapter has no Bluetooth", "Not tried"]
+    validations:
+      required: true
+  - type: textarea
+    id: modeswitch
+    attributes:
+      label: Mode-switch commands tried (adapters that stay at 1111:1111)
+      description: Which commands from docs/mode-switch.md you tried, and what usb_modeswitch printed.
+      render: text
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I removed MAC addresses, serial numbers, network names (SSIDs), IP addresses and passwords from everything above.
+          required: true
