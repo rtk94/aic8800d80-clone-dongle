@@ -6,17 +6,19 @@ Each entry links its GitHub issue where there is one.
 
 ## Coverage gaps
 
-### Hardware testing covers one adapter on one kernel
-The current code has been run on real hardware only on Debian 13 with Linux
-6.12.113, with one dongle (`a69c:8d80` / `a69c:8d81` behind an internal `214b:7250`
-hub). Every other kernel in the README's table is a compile or container result only.
-Issue: [#2](https://github.com/rtk94/aic8800d80-clone-dongle/issues/2)
+### Hardware testing covers one adapter on two kernels
+The current code has been run on real hardware only on Debian 13 with Linux 6.12.113
+and 6.12.115, on two machines, with one dongle (`a69c:8d80` / `a69c:8d81` behind an
+internal `214b:7250` hub). Every other kernel in the README's table is a compile or
+container result only. Issue: [#2](https://github.com/rtk94/aic8800d80-clone-dongle/issues/2)
 
-### The current installer has not been run on real hardware
-`install.sh` and `uninstall.sh` in their current form have been run end to end only in
-unprivileged containers (Debian 13, Ubuntu 24.04, Fedora 44, Arch Linux, openSUSE
-Tumbleweed), where kernel modules cannot be loaded. The maintainer's machine still runs
-an older installation. Issue: [#1](https://github.com/rtk94/aic8800d80-clone-dongle/issues/1)
+### The installer has been run on real hardware only on Debian 13
+On the maintainer's main computer (Linux 6.12.115), `install.sh`, a reboot, a replug,
+`uninstall.sh` and a reinstall all worked on 2026-11-02. On the late-2007 MacBook
+(Linux 6.12.113), install, reboot and replug worked; `uninstall.sh` has not yet been run
+there after the install. Other distributions have only been tested in unprivileged
+containers, where kernel modules cannot be loaded.
+Issue: [#1](https://github.com/rtk94/aic8800d80-clone-dongle/issues/1)
 
 ### The 88M80 `1111:1111` mode switch is untested here
 No 88M80 adapter has been available. Upstream reports disagree on what works for units
@@ -47,8 +49,9 @@ described in [MACBOOK.md](MACBOOK.md). Issue: [#8](https://github.com/rtk94/aic8
 ### `chip_mcu_id=1` adapters need upstream's `legacy-mcu1` branch
 Upstream says adapters whose driver log reports `chip_mcu_id=1` need its
 [`legacy-mcu1`](https://github.com/shenmintao/aic8800d80/tree/legacy-mcu1) branch. This
-repository only carries upstream `main`. The `chip_mcu_id` of the tested dongle has not
-been recorded; it works with `main`.
+repository only carries upstream `main`. The tested dongle reports
+`chip_id=7, chip_mcu_id = 0` (kernel log, 2026-11-02), for which upstream says to use
+`main`; it works with `main`.
 
 ## Installer
 
