@@ -91,7 +91,11 @@ hci0 bus_driver=btusb
 
 The Wi-Fi interface is named `wlx` followed by the adapter's MAC address. Connect with
 your usual network manager, for example
-`nmcli device wifi connect "<YOUR_SSID>" password "<YOUR_PASSWORD>"`.
+`nmcli --ask device wifi connect "<YOUR_SSID>" ifname wlx<MAC>`, which asks for the
+password instead of taking it on the command line. Avoid the `password "<...>"` form if
+the network already has a saved profile (for example from another Wi-Fi card): with
+NetworkManager 1.52.1 it then fails with
+`802-11-wireless-security.key-mgmt: property is missing`, while `--ask` connects.
 
 ## Bluetooth
 

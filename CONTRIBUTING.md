@@ -79,8 +79,8 @@ row to the README's table, run these steps and attach the cleaned output:
    interfaces, a `wlx<MAC>` interface and `hci0` present.
 3. Unplug, wait 5 seconds, plug back in, and run it again: the result must be the same.
 4. Connect to a throwaway network (a phone hotspot is fine) with
-   `nmcli device wifi connect "<SSID>" password "<PASSWORD>" ifname <WLX_INTERFACE>`,
-   then check traffic through the adapter only:
+   `nmcli --ask device wifi connect "<SSID>" ifname <WLX_INTERFACE>` (it asks for the
+   password; the `password` argument fails if the network has a saved profile), then check traffic through the adapter only:
    `ping -c 4 -I <WLX_INTERFACE> 9.9.9.9`. Report only whether it connected and the
    ping summary line, then delete the connection with
    `nmcli connection delete "<SSID>"`.

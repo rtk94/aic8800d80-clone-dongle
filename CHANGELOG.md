@@ -60,6 +60,10 @@ All notable changes to this repository. Upstream's own changes are in its histor
   maintainer's machines), and the P2P address differs from the adapter MAC only in the
   first byte, so before this fix the output of these scripts with `sudo` could reveal the
   adapter MAC (`e9847af`).
+- The README's Verify section and the manual smoke test in CONTRIBUTING.md suggest
+  `nmcli --ask device wifi connect`. The `password "<...>"` form they suggested before
+  fails with `802-11-wireless-security.key-mgmt: property is missing` when the network
+  already has a saved profile (reproduced with NetworkManager 1.52.1 on Debian 13).
 
 ### Added
 
