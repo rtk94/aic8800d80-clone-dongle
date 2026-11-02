@@ -151,7 +151,7 @@ class PreflightTests(SafetyTestCase):
         self.box.stub("make", "exit 2")
         result = self.box.run_function("preflight_build\necho UNEXPECTED_CONTINUE")
         self.assertFailed(result)
-        self.assertIn("Nothing on the system was changed", result.stdout)
+        self.assertIn("Existing firmware and DKMS installation were not changed", result.stdout)
         self.assertNotIn("UNEXPECTED_CONTINUE", result.stdout)
         self.assertEqual(self.old_fw.read_text(), "installed")
         self.assertEqual(self.box.calls_to("dkms"), [])
@@ -159,10 +159,12 @@ class PreflightTests(SafetyTestCase):
     def test_successful_build_targets_running_kernel(self):
         result = self.box.run_function("preflight_build")
         self.assertOk(result)
-        (call,) = self.box.calls_to("make")
+        clean, build = self.box.calls_to("make")
+        self.assertTrue(clean.endswith(" clean"), clean)
         kver = subprocess.run(["uname", "-r"], capture_output=True, text=True).stdout.strip()
-        self.assertIn(f"KVER={kver}", call)
-        self.assertIn(f"KDIR=/lib/modules/{kver}/build", call)
+        for call in (clean, build):
+            self.assertIn(f"KVER={kver}", call)
+            self.assertIn(f"KDIR=/lib/modules/{kver}/build", call)
 
     def test_missing_dkms_conf_stops(self):
         result = self.box.run_function("require_dkms_conf\necho UNEXPECTED_CONTINUE")

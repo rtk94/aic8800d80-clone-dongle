@@ -595,28 +595,24 @@ require_dkms_conf() {
 # Pre-flight Build
 #############################################################################
 
-# Build the modules once in a temporary copy before anything on the system
-# is changed. If the source does not compile for this kernel, the existing
-# firmware, DKMS registration and modules are left exactly as they were.
 preflight_build() {
-    print_step "Test-building the driver for $(uname -r) before changing the system..."
-
-    local build_root
-    build_root=$(mktemp -d /tmp/aic8800-preflight.XXXXXX)
-    cp -r "${SCRIPT_DIR}/drivers" "$build_root/"
-
-    local kver
+    local build_root kver
     kver="$(uname -r)"
-    if ! make -C "$build_root/drivers/aic8800" -j"$(nproc 2>/dev/null || echo 1)" \
-            KVER="$kver" KDIR="/lib/modules/$kver/build" >> "$LOG_FILE" 2>&1; then
-        rm -rf "$build_root"
-        print_error "The driver does not build for kernel $kver. Nothing on the system was changed."
-        echo "See $LOG_FILE for the compiler output."
-        exit 1
-    fi
+    print_step "Test-building the driver for $kver before replacing the existing installation..."
 
-    rm -rf "$build_root"
-    print_success "Test build succeeded."
+    build_root=$(mktemp -d "${TMPDIR:-/tmp}/aic8800-preflight.XXXXXX")
+    # Use a private copy and clean it so a previous build cannot hide an error.
+    if cp -r "${SCRIPT_DIR}/drivers" "$build_root/" >> "$LOG_FILE" 2>&1 &&
+            make -C "$build_root/drivers/aic8800" KVER="$kver" KDIR="/lib/modules/$kver/build" clean >> "$LOG_FILE" 2>&1 &&
+            make -C "$build_root/drivers/aic8800" KVER="$kver" KDIR="/lib/modules/$kver/build" >> "$LOG_FILE" 2>&1; then
+        rm -rf "$build_root"
+        print_success "Test build succeeded."
+    else
+        rm -rf "$build_root"
+        print_error "Test build failed for kernel $kver. Existing firmware and DKMS installation were not changed."
+        echo "See $LOG_FILE for the compiler output."
+        return 1
+    fi
 }
 
 #############################################################################
@@ -962,9 +958,11 @@ main() {
     check_root
 
     # Initialize log file: owned by root, readable by all, never world-writable
-    rm -f "$LOG_FILE" 2>/dev/null || true
-    mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
-    install -m 0644 /dev/null "$LOG_FILE" 2>/dev/null || true
+    rm -f "$LOG_FILE"
+    if [ -n "$DESTDIR" ]; then
+        mkdir -p "$(dirname "$LOG_FILE")"
+    fi
+    install -m 0644 /dev/null "$LOG_FILE"
     if [ -n "$DESTDIR" ]; then
         print_warning "DESTDIR is set: files are written under $DESTDIR (test mode). DKMS, package and module commands still act on this system."
     fi

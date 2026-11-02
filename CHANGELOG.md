@@ -7,6 +7,16 @@ All notable changes to this repository. Upstream's own changes are in its histor
 
 ### Synced with upstream
 
+- Merged upstream `main` at `2e75f88` (2026-11-02). Upstream's PR
+  [#131](https://github.com/shenmintao/aic8800d80/pull/131) adopted parts of the
+  installer and udev fixes listed under "Fixed" (from upstream PRs #128 and #129): the
+  test build before changing the system, the log in `/var/log`, and the narrowed
+  `1111:1111` and eject rules. Where the two versions overlapped, this repository now
+  uses upstream's: its `preflight_build` (which also runs `make clean` and stops if the
+  copy fails) and its stricter log setup, which stops if the log cannot be created.
+  The merge also brings upstream's `AGENTS.md` (its maintenance policy, in Chinese) and
+  its installer and udev tests. The hardware runs recorded in the README used the
+  installer from before this merge (`4b99e2f`).
 - Merged upstream `shenmintao/aic8800d80` `main` at `fab5be8`, with its full history
   (`a82a47e`). Until then every code file here was a copy of upstream's older
   `bluetooth` branch at [`8006daf`](https://github.com/shenmintao/aic8800d80/commit/8006daf). Taking upstream `main` brings:
@@ -24,6 +34,8 @@ All notable changes to this repository. Upstream's own changes are in its histor
 - `install.sh` test-builds the driver for the running kernel before changing anything;
   a failed build leaves the system as it was. Before, it removed the existing driver
   for every kernel and only then found that the new source did not compile (`50c66a4`).
+  Since the 2026-11-02 sync this uses upstream's implementation of the same check
+  (`bee4006`).
 - `install.sh` moves existing `/lib/firmware/aic8800*` directories to
   `/var/backups/aic8800-firmware-<date>/` instead of deleting them, and refuses to touch
   them if a package owns them (`4866800`).
