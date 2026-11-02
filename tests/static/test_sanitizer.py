@@ -5,7 +5,7 @@ Usage: python3 tests/static/test_sanitizer.py
 
 diagnose_bt.sh, diagnostic_build.sh and scripts/hw-smoke.sh each carry a
 copy of sanitize_output() so that each can be run on its own. This test
-keeps the copies identical and checks what the filter masks.
+keeps the copies identical and checks what each copy masks.
 """
 
 from pathlib import Path
@@ -24,10 +24,10 @@ def extract(script):
     return match.group()
 
 
-def sanitize(text, user="alice", host="workstation", raw=False):
+def sanitize(text, user="alice", host="workstation", raw=False, source=SCRIPTS[0]):
     env = {"PATH": "/usr/bin:/bin", "SUDO_USER": user, "AIC_DIAG_RAW": "1" if raw else "0"}
     # Make hostname return a known value.
-    script = f'hostname() {{ echo {host}; }}\n{extract(SCRIPTS[0])}\nsanitize_output'
+    script = f'hostname() {{ echo {host}; }}\n{extract(source)}\nsanitize_output'
     return subprocess.run(["bash", "-c", script], input=text, text=True, capture_output=True, env=env, check=True).stdout
 
 
@@ -44,6 +44,14 @@ class SanitizerTests(unittest.TestCase):
             with self.subTest(script=script.name):
                 self.assertEqual(normalized(script), first)
 
+    def assert_sanitized(self, cases):
+        # Run every case through every copy, so a copy that diverges in
+        # behaviour fails here even if the text comparison above misses it.
+        for script in SCRIPTS:
+            for raw, expected in cases.items():
+                with self.subTest(script=script.name, raw=raw):
+                    self.assertEqual(sanitize(raw + "\n", source=script).strip(), expected)
+
     def test_masks_identifiers(self):
         cases = {
             "BD Address: 02:00:00:00:00:01 ACL MTU": "BD Address: <MAC> ACL MTU",
@@ -54,9 +62,22 @@ class SanitizerTests(unittest.TestCase):
             "/home/alice/src/aic8800": "/home/<user>/src/aic8800",
             "owner alice on workstation": "owner <user> on <host>",
         }
-        for raw, expected in cases.items():
-            with self.subTest(raw=raw):
-                self.assertEqual(sanitize(raw + "\n").strip(), expected)
+        self.assert_sanitized(cases)
+
+    def test_masks_space_separated_driver_addresses(self):
+        # aic8800_fdrv prints these with "%x %x %x %x %x %x" (rwnx_main.c),
+        # so bytes below 0x10 have a single digit. The P2P line is logged at
+        # the default level on every load; the P2P address differs from the
+        # adapter MAC at most in the first byte.
+        cases = {
+            "AICWFDBG(LOGERROR)\tp2p dev addr=2 11 22 33 44 55": "AICWFDBG(LOGERROR)\tp2p dev addr=<MAC>",
+            "AICWFDBG(LOGERROR)\tp2p dev addr=2 0 4c a 3 ff": "AICWFDBG(LOGERROR)\tp2p dev addr=<MAC>",
+            "AICWFDBG(LOGERROR)\tp2p dev addr=02 11 22 33 44 55": "AICWFDBG(LOGERROR)\tp2p dev addr=<MAC>",
+            "interface add:2 11 22 33 44 55": "interface add:<MAC>",
+            "rwnx_cfg80211_add_iface mac_addr:2 11 22 33 44 55 addr:2 11 22 33 44 56 ":
+                "rwnx_cfg80211_add_iface mac_addr:<MAC> addr:<MAC>",
+        }
+        self.assert_sanitized(cases)
 
     def test_keeps_versions_and_ids(self):
         for line in (
@@ -65,9 +86,13 @@ class SanitizerTests(unittest.TestCase):
             "firmware 1.2.3.4.5",
             "ID a69c:8d81 bcdDevice=0100",
             "usb 3-1.1: New USB device found",
+            "sr 2:0:0:0: [sr0] tag#7 CDB: Read(10) 28 00 00 00 00 00 00 00 01 00",
+            "aicbt_patch_table_load bt uart_baud[4]:1000000",
+            "AICWFDBG(LOGERROR)\tRead FW mem: 120000",
         ):
-            with self.subTest(line=line):
-                self.assertEqual(sanitize(line + "\n").strip(), line)
+            for script in SCRIPTS:
+                with self.subTest(script=script.name, line=line):
+                    self.assertEqual(sanitize(line + "\n", source=script).strip(), line)
 
     def test_raw_mode_disables_masking(self):
         line = "BD Address: 02:00:00:00:00:01"
