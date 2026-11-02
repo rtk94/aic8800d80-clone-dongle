@@ -20,7 +20,7 @@ Plug the adapter in and run `lsusb`.
 
 | `lsusb` shows | What it is | Status here |
 |---|---|---|
-| `a69c:8d80` "AIC Wlan", becoming `a69c:8d81` "AIC 8800D80" after a few seconds | AIC8800D80 in loader mode, then running | **Tested** with one dongle |
+| `a69c:8d80` "AIC Wlan", becoming `a69c:8d81` "AIC 8800D80" about a second later | AIC8800D80 in loader mode, then running | **Tested** with one dongle |
 | the above plus `1111:1111` "FLASH" and a `214b:7250` "USB2.0 HUB" | a dongle with an internal hub and a separate flash disk holding the Windows installer (see [docs/mode-switch.md](docs/mode-switch.md)) | **Tested**: this is the maintainer's dongle; the flash disk is normal and needs nothing |
 | `1111:1111` with product `88M80`, and no `a69c` device | a "Pandora 88M80" clone in mass-storage mode; needs a vendor command to switch | Switch configuration from upstream; **untested here** |
 | `a69c:5721` to `a69c:572f` | mass-storage mode of other AIC adapters (the rule names suggest Tenda, UGREEN and Cudy units) | eject rule from upstream; **untested here** |
@@ -148,7 +148,7 @@ issue with its output (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 - **A removable disk named after the adapter appears.** On dongles with an internal hub,
   the `1111:1111` "FLASH" device is a separate flash disk holding the Windows driver.
   This is normal and does not affect Wi-Fi.
-- **`lsusb` stays at `a69c:8d80`.** The firmware upload failed. Run
+- **`lsusb` stays at `a69c:8d80`.** This usually means the firmware upload failed. Run
   `sudo ./scripts/hw-smoke.sh`. If the kernel log reports `chip_mcu_id=1`, upstream says
   this adapter needs its
   [`legacy-mcu1`](https://github.com/shenmintao/aic8800d80/tree/legacy-mcu1) branch,
@@ -169,10 +169,10 @@ Three different kinds of evidence, kept apart on purpose. CI proves that the cod
 compiles and that the installer works in a container; it says nothing about whether an
 adapter works.
 
-| Kernel | Distribution | Maintainer's hardware | Built (containers) | Reported by others |
+| Kernel | Distribution | Maintainer's hardware | Built (containers, locally and in CI) | Reported by others |
 |---|---|---|---|---|
 | 6.12.113+deb13-amd64 | Debian 13 | **Works**: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic (2026-11-01) | yes, and installer passed | none yet |
-| 6.12.111+deb13-amd64 | Debian 13 | not tested with this code | yes (local build) | none yet |
+| 6.12.111+deb13-amd64 | Debian 13 | not tested with this code | yes (local build only, not in CI) | none yet |
 | 6.12.101+deb13-amd64 | Debian 13 | not tested with this code | yes | none yet |
 | 6.12.100+deb13-amd64 | Debian 13 | not tested with this code | yes | none yet |
 | 6.1.0-54-amd64 | Debian 12 | not tested | yes | none yet |
@@ -187,6 +187,12 @@ had a local kernel-compatibility patch. With that older code the maintainer ran 
 adapter on their main computer under Debian 13 (kernel versions not recorded; the first
 commit records successful builds on 6.12.95, 6.12.96 and 6.12.100) and on a late-2007 MacBook
 (6.12.101 and 6.12.107). Those runs say nothing about the current code.
+
+The container results were reproduced on GitHub Actions on 2026-11-01
+([run 41364326580](https://github.com/rtk94/aic8800d80-clone-dongle/actions/runs/41364326580)):
+every build target in the table except 6.12.111, and install, reinstall and uninstall on
+all five distributions, with the same kernel versions. CI repeats the builds on every
+push and weekly, so newer distribution kernels will replace these versions over time.
 
 For reports about upstream's code on other systems, see upstream's README and issues.
 
