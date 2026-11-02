@@ -95,6 +95,8 @@ All notable changes to this repository. Upstream's own changes are in its histor
   `ROADMAP.md` and this file.
 - GitHub issue forms (bug report, new hardware report, feature request) and a pull
   request template.
+- Hardware results for the late-2007 MacBook on Linux 6.12.113 and 6.12.115 (installer
+  revisions `4b99e2f` and `e5843a4`) in `README.md`, `MACBOOK.md` and `KNOWN_ISSUES.md`.
 
 ## 2026-08-02
 

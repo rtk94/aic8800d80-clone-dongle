@@ -67,7 +67,8 @@ end, in containers, on Debian 13, Ubuntu 24.04, Fedora 44, Arch Linux and openSU
 Tumbleweed (see [Tested on](#tested-on)). On real hardware it has been run only on
 Debian 13: on the maintainer's main computer (Linux 6.12.115: install, reboot, replug,
 uninstall and reinstall) and on a late-2007 MacBook (Linux 6.12.113: install, reboot and
-replug).
+replug; Linux 6.12.115: a DKMS rebuild on a kernel update, replug, uninstall and
+reinstall).
 
 ## Verify
 
@@ -179,8 +180,8 @@ adapter works.
 
 | Kernel | Distribution | Maintainer's hardware | Built (containers, locally and in CI) | Reported by others |
 |---|---|---|---|---|
-| 6.12.115+deb13.1-amd64 | Debian 13 | **Works** on the main computer, installed with `install.sh` at `4b99e2f`: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic, replug re-enumerates, `uninstall.sh` removes the installation (2026-11-02) | yes (DKMS on the maintainer's machine, not in CI) | none yet |
-| 6.12.113+deb13-amd64 | Debian 13 | **Works** on the main computer with hand-loaded modules: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic (2026-11-01). **Works** on the late-2007 MacBook, installed with the current `install.sh` (revision not recorded): association through the XFCE network applet and traffic, `hci0` up, a keyboard and a mouse paired, replug re-enumerates; `nmcli device wifi connect ... password` failed ([#29](https://github.com/rtk94/aic8800d80-clone-dongle/issues/29)) (2026-11-02) | yes, and installer passed | none yet |
+| 6.12.115+deb13.1-amd64 | Debian 13 | **Works** on the main computer, installed with `install.sh` at `4b99e2f`: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic, replug re-enumerates, `uninstall.sh` removes the installation (2026-11-02). **Works** on the late-2007 MacBook (2026-11-02): when the kernel updated from 6.12.113, DKMS rebuilt, signed and installed the module with no manual step; after a reboot `aic_load_fw` and `aic8800_fdrv` loaded and bound, Wi-Fi reconnected from a saved profile and passed traffic (3 of 3 pings, no throughput figure), `hci0` was powered on, one replug re-enumerated cleanly, `uninstall.sh` removed the installation, and `install.sh` at `e5843a4` reinstalled it. Keyboard and mouse pairing was not repeated on this kernel | yes (DKMS on the maintainer's machines, not in CI) | none yet |
+| 6.12.113+deb13-amd64 | Debian 13 | **Works** on the main computer with hand-loaded modules: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic (2026-11-01). **Works** on the late-2007 MacBook, installed with the current `install.sh` (revision `4b99e2f`, read from `SOURCE_REVISION` afterwards): association through the XFCE network applet and traffic, `hci0` up, a keyboard and a mouse paired, replug re-enumerates; `nmcli device wifi connect ... password` failed ([#29](https://github.com/rtk94/aic8800d80-clone-dongle/issues/29)) (2026-11-02) | yes, and installer passed | none yet |
 | 6.12.111+deb13-amd64 | Debian 13 | not tested with this code | yes (local build only, not in CI) | none yet |
 | 6.12.101+deb13-amd64 | Debian 13 | not tested with this code | yes | none yet |
 | 6.12.100+deb13-amd64 | Debian 13 | not tested with this code | yes | none yet |
