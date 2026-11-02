@@ -74,8 +74,9 @@ lsusb | grep -iE 'a69c|1111'   # expect a69c:8d81 once the firmware is loaded
 ```
 
 `scripts/hw-smoke.sh` only reads system state, and masks MAC addresses, serial numbers
-and other identifiers so its output can be pasted into an issue. Run it with `sudo` to
-include kernel log lines. A working adapter looks like this:
+and other identifiers in the formats known to appear in its output, so that it can be
+pasted into an issue; read it before posting. Run it with `sudo` to include kernel log
+lines. A working adapter looks like this:
 
 ```text
 a69c:8d81 bcdDevice=0100 product="AIC 8800D80" speed=480M port=3-1.1

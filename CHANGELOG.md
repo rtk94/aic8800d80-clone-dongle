@@ -53,6 +53,13 @@ All notable changes to this repository. Upstream's own changes are in its histor
 - `diagnose_bt.sh` and `diagnostic_build.sh` mask MAC addresses, serial numbers, IP
   addresses, user and host names and home paths in their output (`bb2dc6c`);
   `diagnose_bt.sh` is executable (`944591e`).
+- `scripts/hw-smoke.sh`, `diagnose_bt.sh` and `diagnostic_build.sh` also mask the
+  space-separated addresses the Wi-Fi driver logs, such as
+  `AICWFDBG(LOGERROR) p2p dev addr=<MAC>`. That line is logged at the default level
+  whenever a P2P device is added (it appeared after every load on one of the
+  maintainer's machines), and the P2P address differs from the adapter MAC only in the
+  first byte, so before this fix the output of these scripts with `sudo` could reveal the
+  adapter MAC (`e9847af`).
 
 ### Added
 
@@ -62,7 +69,7 @@ All notable changes to this repository. Upstream's own changes are in its histor
   identifiers (`4d28f15`).
 - Tests: static checks of the mode-switch configuration and udev rules (`7dcbdec`),
   installer and uninstaller safety tests (`4bc0322`), a check of the shared output
-  filter (`145d0d6`), install/uninstall runs in five distribution containers
+  filter (`145d0d6`, run against every copy since `e9847af`), install/uninstall runs in five distribution containers
   (`4d510f2`), a compile-only build matrix (`042e10d`), a `Makefile` (`2063cc7`) and a
   GitHub Actions workflow (`27e036d`). Upstream's installer tests were updated for the
   changed behaviour (`2b40691`). `DESTDIR` lets the tests redirect the scripts' writes
