@@ -38,8 +38,6 @@ its GitHub issue. Known problems are in
 - **More kernels in the build matrix**: Ubuntu's HWE kernel, Debian backports, the
   previous Fedora release, Arch's `linux-lts` (which also exercises the installer's
   `pkgbase` lookup), and a 32-bit build. [#15](https://github.com/rtk94/aic8800d80-clone-dongle/issues/15), [#16](https://github.com/rtk94/aic8800d80-clone-dongle/issues/16), [#17](https://github.com/rtk94/aic8800d80-clone-dongle/issues/17), [#18](https://github.com/rtk94/aic8800d80-clone-dongle/issues/18)
-- **CI on GitHub**: confirm the workflow runs green on GitHub itself; it has so far
-  only been run locally. (checked when the branches are first pushed)
 
 ## Hardware support
 

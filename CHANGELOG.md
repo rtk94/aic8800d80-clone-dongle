@@ -47,6 +47,9 @@ All notable changes to this repository. Upstream's own changes are in its histor
 - `install.sh` warns when an older build of the driver is still loaded after install
   (`1d05e1c`), creates `/lib/firmware` if it is missing (`1212708`), and prints its
   final instructions without raw colour codes (`944591e`).
+- `scripts/privacy-scan.sh` reads every commit message, not only the first-parent
+  history, which after merging pull requests no longer contains this repository's own
+  commits (`432e8d4`).
 - `diagnose_bt.sh` and `diagnostic_build.sh` mask MAC addresses, serial numbers, IP
   addresses, user and host names and home paths in their output (`bb2dc6c`);
   `diagnose_bt.sh` is executable (`944591e`).
