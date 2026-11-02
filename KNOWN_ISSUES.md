@@ -15,8 +15,8 @@ container result only. Issue: [#2](https://github.com/rtk94/aic8800d80-clone-don
 ### The installer has been run on real hardware only on Debian 13
 On the maintainer's main computer (Linux 6.12.115), `install.sh`, a reboot, a replug,
 `uninstall.sh` and a reinstall all worked on 2026-11-02. On the late-2007 MacBook
-(Linux 6.12.113), install, reboot and replug worked; `uninstall.sh` has not yet been run
-there after the install. Other distributions have only been tested in unprivileged
+(Linux 6.12.113 and 6.12.115), install, reboot, replug, a DKMS rebuild on a kernel update,
+`uninstall.sh` and a reinstall worked. Other distributions have only been tested in unprivileged
 containers, where kernel modules cannot be loaded.
 Issue: [#1](https://github.com/rtk94/aic8800d80-clone-dongle/issues/1)
 
@@ -100,6 +100,12 @@ logs `AICWFDBG(LOGERROR) Read FW mem: ...` lines. The first is deliberate: the l
 declines the device once the firmware is loaded so `aic8800_fdrv` can take it
 (`aicwf_usb.c`, it returns `-1` instead of `-ENODEV`). The adapter works in both cases.
 They are noise, not failures.
+
+Two more error-level lines were seen on the MacBook (2026-11-02). Their causes were not
+investigated, so treat them as unverified observations: the kernel's Bluetooth core
+logged `hci0: Opcode 0x2037 failed: -38` (`-38` is `ENOSYS`, function not implemented)
+once at boot and again after a replug, and Bluetooth worked anyway; and after Wi-Fi
+scans the driver logged `rwnx_rx_scanu_start_cfm rwnx_hw->scan_request is NULL!!`.
 
 ## Licensing
 

@@ -6,10 +6,17 @@ The maintainer has run this adapter on a late-2007 black polycarbonate MacBook
 
 **The current code works there.** On 2026-11-02, with Linux `6.12.113+deb13-amd64`, the
 old installation was removed with `uninstall.sh` and the current code installed with
-`install.sh` (the exact revision was not recorded). After a reboot, Wi-Fi associated
+`install.sh` (revision `4b99e2f`, read from `SOURCE_REVISION` afterwards). After a reboot, Wi-Fi associated
 through the XFCE network applet and passed traffic, the Bluetooth controller was up and
 a keyboard and a mouse paired and worked, and unplugging and replugging the adapter
 re-enumerated it cleanly. Throughput has still not been measured.
+
+Later on 2026-11-02 the kernel was updated to `6.12.115+deb13.1-amd64`. DKMS rebuilt, signed
+and installed the module for it with no manual step (`linux-headers-amd64` was
+installed), and after a reboot the adapter bound, reconnected to Wi-Fi from a saved
+profile and answered pings (3 of 3). A replug re-enumerated it cleanly, `uninstall.sh`
+removed the installation and `install.sh` at `e5843a4` reinstalled it. Keyboard and mouse
+pairing was not repeated on that kernel.
 
 Before that, the maintainer used the older code this repository carried before the
 2026-11-01 sync (kernels 6.12.101 and 6.12.107).
@@ -54,14 +61,18 @@ any error, and the adapter stopped working until the headers were installed.
   `ssh <host> sudo dkms status`.
 - **`nmcli device wifi connect "<SSID>" password "<...>"` failed** with
   `802-11-wireless-security.key-mgmt: property is missing`, while the XFCE applet
-  connected. On the main computer the same error happens when the network already has a
-  saved profile; whether that was the cause here was not checked. Use
+  connected. On the main computer and on this MacBook (NetworkManager 1.52.1) the same
+  error happens when the network already has a saved profile; on the MacBook this was
+  reproduced on 2026-11-02 with a dummy password, with the dongle connected and with it
+  disconnected. Use
   `nmcli --ask device wifi connect "<SSID>" ifname wlx<MAC>` instead.
   Issue: [#29](https://github.com/rtk94/aic8800d80-clone-dongle/issues/29)
 - **After a replug, Bluetooth came back powered off** (`hci0` DOWN,
   `bluetoothctl show` reporting `Powered: no`) until it was powered on by hand. The cause
   was not checked; BlueZ's `AutoEnable` setting in `/etc/bluetooth/main.conf` is one
-  candidate. On the main computer, Bluetooth came back powered on after a replug.
+  candidate. On the main computer, Bluetooth came back powered on after a replug, and it did on the
+  MacBook too on 2026-11-02 (kernel 6.12.115, one replug), so the earlier observation did
+  not reproduce.
 - **The built-in Wi-Fi card** (a Broadcom card using the `b43` driver on this machine)
   stays present. To keep NetworkManager from using it, you
   can unload and blacklist its driver; which driver that is depends on the card and on
