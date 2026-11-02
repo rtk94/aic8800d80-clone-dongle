@@ -10,8 +10,9 @@ configuration are maintained upstream. This repository adds safety fixes to the
 installer and rules, an uninstaller, a test suite and documentation. See
 [NOTICE.md](NOTICE.md) for exactly what comes from where.
 
-**Status:** works on the maintainer's one adapter on Debian 13 with Linux 6.12.113
-(Wi-Fi association and traffic, Bluetooth controller up). Builds against the kernels
+**Status:** works on the maintainer's one adapter on Debian 13 with Linux 6.12.113 and
+6.12.115, on two machines (Wi-Fi association and traffic, Bluetooth controller up).
+Builds against the kernels
 listed under [Tested on](#tested-on). Everything else is untested.
 
 ## Is this your device?
@@ -63,8 +64,10 @@ as it was. Otherwise it:
 
 The log is written to `/var/log/aic8800-install.log`. The installer has been run end to
 end, in containers, on Debian 13, Ubuntu 24.04, Fedora 44, Arch Linux and openSUSE
-Tumbleweed (see [Tested on](#tested-on)); on real hardware it has not yet been run in
-its current form.
+Tumbleweed (see [Tested on](#tested-on)). On real hardware it has been run only on
+Debian 13: on the maintainer's main computer (Linux 6.12.115: install, reboot, replug,
+uninstall and reinstall) and on a late-2007 MacBook (Linux 6.12.113: install, reboot and
+replug).
 
 ## Verify
 
@@ -176,7 +179,8 @@ adapter works.
 
 | Kernel | Distribution | Maintainer's hardware | Built (containers, locally and in CI) | Reported by others |
 |---|---|---|---|---|
-| 6.12.113+deb13-amd64 | Debian 13 | **Works**: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic (2026-11-01) | yes, and installer passed | none yet |
+| 6.12.115+deb13.1-amd64 | Debian 13 | **Works** on the main computer, installed with `install.sh` at `4b99e2f`: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic, replug re-enumerates, `uninstall.sh` removes the installation (2026-11-02) | yes (DKMS on the maintainer's machine, not in CI) | none yet |
+| 6.12.113+deb13-amd64 | Debian 13 | **Works** on the main computer with hand-loaded modules: firmware load, `aic8800_fdrv` and `btusb` bound, `hci0` up, association and traffic (2026-11-01). **Works** on the late-2007 MacBook, installed with the current `install.sh` (revision not recorded): association through the XFCE network applet and traffic, `hci0` up, a keyboard and a mouse paired, replug re-enumerates; `nmcli device wifi connect ... password` failed ([#29](https://github.com/rtk94/aic8800d80-clone-dongle/issues/29)) (2026-11-02) | yes, and installer passed | none yet |
 | 6.12.111+deb13-amd64 | Debian 13 | not tested with this code | yes (local build only, not in CI) | none yet |
 | 6.12.101+deb13-amd64 | Debian 13 | not tested with this code | yes | none yet |
 | 6.12.100+deb13-amd64 | Debian 13 | not tested with this code | yes | none yet |

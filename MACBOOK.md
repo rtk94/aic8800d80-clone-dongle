@@ -2,9 +2,17 @@
 
 The maintainer has run this adapter on a late-2007 black polycarbonate MacBook
 (2.4 GHz Core 2 Duo, 2 GB of RAM, shipped with Mac OS X 10.5 Leopard) running Debian 13
-(x86_64), with the older code this repository carried before the 2026-11-01 sync
-(kernels 6.12.101 and 6.12.107). Its model identifier has not been checked. The current
-code has not been run on it yet.
+(x86_64). Its model identifier has not been checked.
+
+**The current code works there.** On 2026-11-02, with Linux `6.12.113+deb13-amd64`, the
+old installation was removed with `uninstall.sh` and the current code installed with
+`install.sh` (the exact revision was not recorded). After a reboot, Wi-Fi associated
+through the XFCE network applet and passed traffic, the Bluetooth controller was up and
+a keyboard and a mouse paired and worked, and unplugging and replugging the adapter
+re-enumerated it cleanly. Throughput has still not been measured.
+
+Before that, the maintainer used the older code this repository carried before the
+2026-11-01 sync (kernels 6.12.101 and 6.12.107).
 
 ## What to expect
 
@@ -44,8 +52,18 @@ any error, and the adapter stopped working until the headers were installed.
 - **`dkms` is in `/usr/sbin`**, which is not on the `PATH` of non-interactive SSH
   sessions, so `ssh <host> dkms status` reports "command not found". Use
   `ssh <host> sudo dkms status`.
-- **The built-in Wi-Fi card** (a Broadcom card on this machine, according to the
-  maintainer's earlier notes) stays present. To keep NetworkManager from using it, you
+- **`nmcli device wifi connect "<SSID>" password "<...>"` failed** with
+  `802-11-wireless-security.key-mgmt: property is missing`, while the XFCE applet
+  connected. On the main computer the same error happens when the network already has a
+  saved profile; whether that was the cause here was not checked. Use
+  `nmcli --ask device wifi connect "<SSID>" ifname wlx<MAC>` instead.
+  Issue: [#29](https://github.com/rtk94/aic8800d80-clone-dongle/issues/29)
+- **After a replug, Bluetooth came back powered off** (`hci0` DOWN,
+  `bluetoothctl show` reporting `Powered: no`) until it was powered on by hand. The cause
+  was not checked; BlueZ's `AutoEnable` setting in `/etc/bluetooth/main.conf` is one
+  candidate. On the main computer, Bluetooth came back powered on after a replug.
+- **The built-in Wi-Fi card** (a Broadcom card using the `b43` driver on this machine)
+  stays present. To keep NetworkManager from using it, you
   can unload and blacklist its driver; which driver that is depends on the card and on
   what is installed (`lspci -k` shows it).
 

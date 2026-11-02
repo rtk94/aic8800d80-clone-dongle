@@ -10,8 +10,9 @@ its GitHub issue. Known problems are in
   [CHANGELOG.md](CHANGELOG.md) are meant for
   [shenmintao/aic8800d80](https://github.com/shenmintao/aic8800d80) as well, so that this
   repository does not drift from it. [#14](https://github.com/rtk94/aic8800d80-clone-dongle/issues/14)
-- **Run the current installer on real hardware**, on the maintainer's main computer and
-  MacBook, and update the README's table. [#1](https://github.com/rtk94/aic8800d80-clone-dongle/issues/1)
+- **Finish the hardware run of the current installer**: run `uninstall.sh` on the
+  MacBook after the install, and attach the cleaned output to the issue. The main
+  computer is done. [#1](https://github.com/rtk94/aic8800d80-clone-dongle/issues/1)
 - **Measure throughput** on the main computer and on the USB 2.0 MacBook
   ([procedure](MACBOOK.md#measure-throughput)). [#8](https://github.com/rtk94/aic8800d80-clone-dongle/issues/8)
 
