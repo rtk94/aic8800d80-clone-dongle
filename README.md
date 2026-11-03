@@ -53,7 +53,8 @@ as it was. Otherwise it:
 
 1. moves any existing `/lib/firmware/aic8800*` directories to
    `/var/backups/aic8800-firmware-<date>/` (mixing firmware versions can hang the
-   system, according to upstream), and refuses to touch them if a package owns them;
+   system, according to upstream), and refuses to touch them if a package owns them.
+   A directory identical to the one this repository ships is replaced without a backup;
 2. copies the firmware to `/lib/firmware`, the udev rules to
    `/etc/udev/rules.d/aic.rules` and the mode-switch configuration to
    `/etc/usb_modeswitch.d/1111:1111`;

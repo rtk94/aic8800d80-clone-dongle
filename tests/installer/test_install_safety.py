@@ -208,6 +208,44 @@ class FirmwareTests(SafetyTestCase):
         backups = list((self.box.root / "var/backups").glob("aic8800-firmware-*/aic8800D80/old.bin"))
         self.assertEqual(len(backups), 1)
 
+    def _install_matching_firmware(self):
+        shutil.rmtree(self.old_fw.parent)
+        return self.box.write("lib/firmware/aic8800D80/new.bin", "new")
+
+    def test_firmware_identical_to_the_shipped_copy_is_not_backed_up(self):
+        installed = self._install_matching_firmware()
+        self.box.stub("dpkg", "exit 1")
+        self.assertOk(self.box.run_function("install_firmware"))
+        self.assertFalse((self.box.root / "var/backups").exists())
+        self.assertEqual(installed.read_text(), "new")
+        # Replaced in place, not copied into a nested directory.
+        self.assertFalse((installed.parent / "aic8800D80").exists())
+
+    def test_changed_firmware_is_still_backed_up(self):
+        installed = self._install_matching_firmware()
+        installed.write_text("edited by hand")
+        self.box.stub("dpkg", "exit 1")
+        self.assertOk(self.box.run_function("install_firmware"))
+        backups = list((self.box.root / "var/backups").glob("aic8800-firmware-*/aic8800D80/new.bin"))
+        self.assertEqual([b.read_text() for b in backups], ["edited by hand"])
+
+    def test_extra_file_in_installed_firmware_is_still_backed_up(self):
+        installed = self._install_matching_firmware()
+        (installed.parent / "extra.bin").write_text("extra")
+        self.box.stub("dpkg", "exit 1")
+        self.assertOk(self.box.run_function("install_firmware"))
+        backups = list((self.box.root / "var/backups").glob("aic8800-firmware-*/aic8800D80/extra.bin"))
+        self.assertEqual(len(backups), 1)
+        self.assertFalse((installed.parent / "extra.bin").exists())
+
+    def test_reinstalling_does_not_add_backups(self):
+        self.box.stub("dpkg", "exit 1")
+        self.assertOk(self.box.run_function("install_firmware"))  # backs up old.bin once
+        self.assertOk(self.box.run_function("install_firmware"))
+        self.assertOk(self.box.run_function("install_firmware"))
+        backups = list((self.box.root / "var/backups").glob("aic8800-firmware-*"))
+        self.assertEqual(len(backups), 1)
+
 
 class UdevInstallTests(SafetyTestCase):
     def setUp(self):
