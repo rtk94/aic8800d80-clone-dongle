@@ -31,6 +31,12 @@ All notable changes to this repository. Upstream's own changes are in its histor
 
 ### Fixed
 
+- `install.sh` no longer leaves a new copy of the firmware in `/var/backups` on every
+  reinstall. An installed `aic8800*` directory that is identical to the one in this
+  repository is replaced without a backup; anything that differs, or has extra files,
+  is still moved to `/var/backups/aic8800-firmware-<date>/`. `uninstall.sh` is
+  unchanged and still keeps one backup per run. Upstream's `AGENTS.md` asks that
+  backups not accumulate without limit.
 - `install.sh` no longer prints the connected network name, wireless interface names
   (which embed the adapter's MAC address), Bluetooth addresses or the host name to the
   terminal in its final verification step; it prints counts only. Its "Next Steps" now
