@@ -869,19 +869,36 @@ verify_installation() {
         print_warning "No firmware found in /lib/firmware/"
     fi
 
-    # Check for wireless interfaces
+    # Only counts are printed below. The tools' own output carries the name of
+    # the connected network, interface names (which embed the adapter's MAC
+    # address), Bluetooth addresses and the host name, and people paste
+    # installer output into issues.
     print_info "Checking for wireless interfaces..."
     if command -v iwconfig &> /dev/null; then
-        iwconfig 2>/dev/null | grep -E "wlan|IEEE" || echo "No wireless interfaces detected (hardware may not be connected)"
+        local wifi_count
+        wifi_count=$(iwconfig 2>/dev/null | grep -cE "wlan|IEEE" || true)
+        if [ "${wifi_count:-0}" -gt 0 ]; then
+            echo "$wifi_count wireless interface(s) present (run iwconfig to list them)"
+        else
+            echo "No wireless interfaces detected (hardware may not be connected)"
+        fi
     fi
 
     print_info "Checking for Bluetooth interfaces on combo adapters..."
+    local bt_count=""
     if command -v bluetoothctl &> /dev/null; then
-        bluetoothctl list 2>/dev/null || echo "No Bluetooth interfaces detected (normal for Wi-Fi-only adapters)"
+        bt_count=$(bluetoothctl list 2>/dev/null | grep -c "^Controller" || true)
     elif command -v hciconfig &> /dev/null; then
-        hciconfig 2>/dev/null || echo "No Bluetooth interfaces detected (normal for Wi-Fi-only adapters)"
+        bt_count=$(hciconfig 2>/dev/null | grep -c "^hci" || true)
     else
         echo "Bluetooth tools not installed (install BlueZ to manage a combo adapter)"
+    fi
+    if [ -n "$bt_count" ]; then
+        if [ "$bt_count" -gt 0 ]; then
+            echo "$bt_count Bluetooth controller(s) present (run bluetoothctl list to see them)"
+        else
+            echo "No Bluetooth interfaces detected (normal for Wi-Fi-only adapters)"
+        fi
     fi
 }
 
@@ -918,7 +935,9 @@ show_final_instructions() {
     echo ""
     echo "4. Connect to a WiFi network:"
     echo -e "   ${BLUE}nmcli device wifi list${NC}"
-    echo -e "   ${BLUE}nmcli device wifi connect \"SSID\" password \"PASSWORD\"${NC}"
+    echo -e "   ${BLUE}nmcli --ask device wifi connect \"SSID\"${NC}"
+    echo "   (--ask prompts for the password; the form with a password argument fails"
+    echo "   when NetworkManager already has a saved profile for the network)"
     echo ""
     echo "5. For a combo adapter, check Bluetooth:"
     echo -e "   ${BLUE}bluetoothctl list${NC}"

@@ -16,6 +16,10 @@ network names (SSIDs), your user name, host name and home directory.
 - `scripts/hw-smoke.sh`, `diagnose_bt.sh` and `diagnostic_build.sh` mask these for you.
   Still read their output before posting; the masking catches the common formats, not
   every possible one.
+- This applies to terminal output as well as log files. The installer prints only
+  counts of wireless interfaces and Bluetooth controllers, but the commands it suggests
+  (`iwconfig`, `ip link show`, `bluetoothctl list`) print network names, interface
+  names and addresses, so clean what they print before you paste it.
 - Do **not** post raw output of `ip a`, `iw dev`, `nmcli`, `hciconfig -a`,
   `bluetoothctl show`, `lsusb -v` or a full `dmesg` without editing it. Replace
   identifiers with placeholders such as `<MAC>`, `<SERIAL>` or `<SSID>`.
