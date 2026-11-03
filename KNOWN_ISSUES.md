@@ -18,7 +18,7 @@ On the maintainer's main computer (Linux 6.12.115), `install.sh`, a reboot, a re
 (Linux 6.12.113 and 6.12.115), install, reboot, replug, a DKMS rebuild on a kernel update,
 `uninstall.sh` and a reinstall worked. Other distributions have only been tested in unprivileged
 containers, where kernel modules cannot be loaded.
-Issue: [#1](https://github.com/rtk94/aic8800d80-clone-dongle/issues/1)
+Issue: [#2](https://github.com/rtk94/aic8800d80-clone-dongle/issues/2)
 
 ### The 88M80 `1111:1111` mode switch is untested here
 No 88M80 adapter has been available. Upstream reports disagree on what works for units
