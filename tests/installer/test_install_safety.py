@@ -298,6 +298,63 @@ class KernelHeadersTests(SafetyTestCase):
         self.assertEqual(calls, ["zypper --non-interactive install kernel-default-devel"])
 
 
+class TerminalOutputTests(SafetyTestCase):
+    """The installer's terminal output must not carry identifiers (issue #35).
+
+    People paste installer output into issues. The tools it calls print the
+    connected network name, interface names that embed the adapter's MAC
+    address, Bluetooth addresses and the host name, none of which reach the
+    install log. All values below are fake and use the documentation prefix 02:00:00.
+    """
+
+    FAKE_SSID = "FakeNetworkNameForTest"
+    FAKE_IFACE = "wlx020000000055"
+    FAKE_MAC = "02:00:00:00:00:56"
+    FAKE_HOST = "fake-host-for-test"
+
+    def stub_wireless_and_bluetooth(self):
+        b = self.box
+        b.stub("iwconfig", f"""
+            echo 'lo        no wireless extensions.'
+            echo ''
+            echo '{self.FAKE_IFACE}  IEEE 802.11  ESSID:"{self.FAKE_SSID}"'
+            echo '          Mode:Managed  Access Point: 02:00:00:00:00:EE'
+        """)
+        b.stub("bluetoothctl", f"""
+            [ "$1" = list ] && echo 'Controller {self.FAKE_MAC} {self.FAKE_HOST} [default]'
+            exit 0
+        """)
+
+    def assertNoIdentifiers(self, text):
+        for value in (self.FAKE_SSID, self.FAKE_IFACE, self.FAKE_MAC, self.FAKE_HOST,
+                      "020000000055", "02:00:00:00:00:EE"):
+            self.assertNotIn(value, text)
+
+    def test_verification_prints_counts_not_identifiers(self):
+        self.stub_wireless_and_bluetooth()
+        result = self.box.run_function("verify_installation")
+        self.assertOk(result)
+        output = result.stdout + result.stderr
+        self.assertNoIdentifiers(output)
+        self.assertIn("1 wireless interface(s) present", output)
+        self.assertIn("1 Bluetooth controller(s) present", output)
+
+    def test_verification_reports_when_nothing_is_present(self):
+        self.box.stub("iwconfig", "echo 'lo        no wireless extensions.'")
+        self.box.stub("bluetoothctl", "exit 0")
+        result = self.box.run_function("verify_installation")
+        self.assertOk(result)
+        output = result.stdout + result.stderr
+        self.assertIn("No wireless interfaces detected", output)
+        self.assertIn("No Bluetooth interfaces detected", output)
+
+    def test_next_steps_do_not_suggest_the_password_argument(self):
+        result = self.box.run_function("show_final_instructions")
+        self.assertOk(result)
+        self.assertIn("nmcli --ask device wifi connect", result.stdout)
+        self.assertNotIn('password "PASSWORD"', result.stdout)
+
+
 class UninstallTests(SafetyTestCase):
     def setUp(self):
         super().setUp()

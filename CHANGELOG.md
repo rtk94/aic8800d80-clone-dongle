@@ -31,6 +31,13 @@ All notable changes to this repository. Upstream's own changes are in its histor
 
 ### Fixed
 
+- `install.sh` no longer prints the connected network name, wireless interface names
+  (which embed the adapter's MAC address), Bluetooth addresses or the host name to the
+  terminal in its final verification step; it prints counts only. Its "Next Steps" now
+  suggest `nmcli --ask device wifi connect` instead of the password-argument form that
+  fails when a saved profile exists. The install log was already clean. This is a
+  change to upstream's `install.sh`, so it diverges from upstream until sent there
+  ([#35](https://github.com/rtk94/aic8800d80-clone-dongle/issues/35)).
 - `install.sh` test-builds the driver for the running kernel before changing anything;
   a failed build leaves the system as it was. Before, it removed the existing driver
   for every kernel and only then found that the new source did not compile (`50c66a4`).
