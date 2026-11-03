@@ -11,6 +11,7 @@ is replaced by a stub on PATH that only records its arguments.
 from pathlib import Path
 import os
 import shlex
+import shutil
 import subprocess
 import tempfile
 import textwrap
@@ -392,6 +393,35 @@ class UninstallTests(SafetyTestCase):
         self.assertFalse(self.fw.exists())
         backups = list((self.box.root / "var/backups").glob("aic8800-firmware-*/aic8800D80/fw.bin"))
         self.assertEqual(len(backups), 1)
+
+    def test_dry_run_finds_tools_that_are_only_in_sbin(self):
+        """Issue #34: dkms and update-initramfs are not on a normal user's PATH."""
+        b = self.box
+        sbin = b.root.parent / "sbin"
+        sbin.mkdir()
+        for name in ("dkms", "update-initramfs"):
+            (b.stubs / name).rename(sbin / name)
+        for name in ("dracut", "mkinitcpio"):
+            (b.stubs / name).unlink()
+        # A PATH with only the basic tools and the stubs, so no real dkms or
+        # initramfs tool on the machine running the test can be found.
+        basic = b.root.parent / "basic"
+        basic.mkdir()
+        for tool in ("rm", "sed", "grep", "sort", "uname", "readlink", "mv",
+                     "mkdir", "find", "date", "dirname", "cat", "tr", "head"):
+            found = shutil.which(tool)
+            self.assertIsNotNone(found, tool)
+            (basic / tool).symlink_to(found)
+        result = subprocess.run(
+            [shutil.which("bash"), str(UNINSTALLER), "--dry-run"], text=True,
+            capture_output=True, timeout=60,
+            env=b.env(PATH=f"{b.stubs}:{basic}", SBIN_DIRS=str(sbin)),
+        )
+        self.assertOk(result)
+        self.assertIn("+ dkms remove aic8800/1.0.0 --all", result.stdout)
+        self.assertIn("+ update-initramfs", result.stdout)
+        self.assertNotIn("is not installed", result.stdout)
+        self.assertNotIn("no supported initramfs tool", result.stdout)
 
     def test_package_owned_firmware_is_kept(self):
         self.box.stub("dpkg", '[ "$1" = -S ] && echo "firmware-aic8800: $2" && exit 0\nexit 1')
