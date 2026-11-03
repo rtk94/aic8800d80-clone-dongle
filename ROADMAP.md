@@ -12,9 +12,6 @@ its GitHub issue. Known problems are in
   repository does not drift from it. Upstream adopted the test build, the log location
   and the udev rule changes (its PR #131); the firmware backup, the headers package, the
   udev install path, the uninstaller and the diagnostic masking are still open there. [#14](https://github.com/rtk94/aic8800d80-clone-dongle/issues/14)
-- **Finish the hardware run of the current installer**: run `uninstall.sh` on the
-  MacBook after the install, and attach the cleaned output to the issue. The main
-  computer is done. [#1](https://github.com/rtk94/aic8800d80-clone-dongle/issues/1)
 - **Measure throughput** on the main computer and on the USB 2.0 MacBook
   ([procedure](MACBOOK.md#measure-throughput)). [#8](https://github.com/rtk94/aic8800d80-clone-dongle/issues/8)
 
