@@ -12,6 +12,16 @@
 
 set -euo pipefail
 
+# dkms and the initramfs tools live in /usr/sbin or /sbin, which a normal user's
+# PATH often lacks (Debian). Without them on PATH, an unprivileged --dry-run
+# reports the tools as missing and leaves two steps out of its plan. They are
+# appended, never prepended, so anything earlier on PATH still wins. SBIN_DIRS
+# exists for the test suite.
+SBIN_DIRS="${SBIN_DIRS:-/usr/local/sbin:/usr/sbin:/sbin}"
+readonly SBIN_DIRS
+PATH="${PATH}:${SBIN_DIRS}"
+export PATH
+
 readonly DRV_NAME="aic8800"
 # DESTDIR (default empty) prefixes every path this script removes. It exists
 # for the test suite; dkms, modprobe and initramfs tools still act on the

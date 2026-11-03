@@ -38,6 +38,11 @@ All notable changes to this repository. Upstream's own changes are in its histor
   fails when a saved profile exists. The install log was already clean. This is a
   change to upstream's `install.sh`, so it diverges from upstream until sent there
   ([#35](https://github.com/rtk94/aic8800d80-clone-dongle/issues/35)).
+- `uninstall.sh --dry-run` run as a normal user no longer reports `dkms` and
+  `update-initramfs` as missing and drops their steps from the plan. On Debian they are
+  in `/usr/sbin`, which an unprivileged `PATH` lacks; the script now appends the sbin
+  directories to `PATH`
+  ([#34](https://github.com/rtk94/aic8800d80-clone-dongle/issues/34)).
 - `install.sh` test-builds the driver for the running kernel before changing anything;
   a failed build leaves the system as it was. Before, it removed the existing driver
   for every kernel and only then found that the new source did not compile (`50c66a4`).
