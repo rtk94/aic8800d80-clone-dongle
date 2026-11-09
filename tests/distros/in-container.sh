@@ -2,7 +2,7 @@
 #
 # Runs inside a distribution container (started by tests/distros/run.sh).
 # Installs the distribution's kernel headers, makes "uname -r" report that
-# kernel, then runs install.sh twice and uninstall.sh once for real and
+# kernel, then runs install.sh three times and uninstall.sh once for real and
 # checks the result. The container is unprivileged, so module loading fails
 # and the host kernel is never touched; everything else runs as on a real
 # system.
@@ -97,8 +97,23 @@ log "install: ok"
 ./install.sh < /dev/null > "$out/install2.log" 2>&1
 rc=$?
 [ "$rc" = 0 ] || fail "second install.sh exited $rc (see install2.log)"
-ls -d /var/backups/aic8800-firmware-* > /dev/null 2>&1 || fail "second install did not back up the firmware"
-log "reinstall: ok"
+# Firmware identical to fw/ is replaced without a backup. install.sh compares
+# with diff; where diff is not installed it backs the firmware up instead.
+if command -v diff > /dev/null; then
+    ls -d /var/backups/aic8800-firmware-* > /dev/null 2>&1 && fail "second install backed up identical firmware"
+    log "reinstall: ok (identical firmware not backed up)"
+else
+    ls -d /var/backups/aic8800-firmware-* > /dev/null 2>&1 || fail "second install did not back up the firmware (diff not installed)"
+    log "reinstall: ok (diff not installed, firmware backed up)"
+fi
+# Firmware that differs from fw/ is moved to a backup.
+touch /lib/firmware/aic8800D80/local-change.bin
+./install.sh < /dev/null > "$out/install3.log" 2>&1
+rc=$?
+[ "$rc" = 0 ] || fail "third install.sh exited $rc (see install3.log)"
+ls /var/backups/aic8800-firmware-*/aic8800D80/local-change.bin > /dev/null 2>&1 || fail "changed firmware was not backed up"
+[ -e /lib/firmware/aic8800D80/local-change.bin ] && fail "changed firmware still installed after reinstall"
+log "reinstall with changed firmware: ok (backed up)"
 
 ./uninstall.sh > "$out/uninstall.log" 2>&1
 rc=$?
