@@ -89,10 +89,36 @@ class SanitizerTests(unittest.TestCase):
             "sr 2:0:0:0: [sr0] tag#7 CDB: Read(10) 28 00 00 00 00 00 00 00 01 00",
             "aicbt_patch_table_load bt uart_baud[4]:1000000",
             "AICWFDBG(LOGERROR)\tRead FW mem: 120000",
+            # Four-part versions: the driver banner (RWNX_VERS_BANNER) and the
+            # firmware version string the driver logs at LOGINFO (every
+            # firmware in fw/ carries a "v<a>.<b>.<c>.<d>" string).
+            "rwnx v6.4.3.0 - 1a4b0054d2M (master)",
+            "AICWFDBG(LOGINFO)\tversion_str=v6.9.1.1",
         ):
             for script in SCRIPTS:
                 with self.subTest(script=script.name, line=line):
                     self.assertEqual(sanitize(line + "\n", source=script).strip(), line)
+
+    def test_masks_ip_addresses_in_kernel_log(self):
+        # Kernel log formats in which addresses reach dmesg: the netfilter
+        # LOG target (UFW and similar), NFS and CIFS. Addresses are from the
+        # RFC 5737 documentation ranges.
+        cases = {
+            "nfs: server 192.0.2.20 not responding, still trying":
+                "nfs: server <IP> not responding, still trying",
+            "CIFS: VFS: \\\\198.51.100.30 Send error in SessSetup = -13":
+                "CIFS: VFS: \\\\<IP> Send error in SessSetup = -13",
+        }
+        self.assert_sanitized(cases)
+        firewall = ("[UFW BLOCK] IN=wlx0123456789ab OUT= MAC=01:00:5e:00:00:fb:02:00:00:aa:bb:cc:08:00 "
+                    "SRC=203.0.113.5 DST=192.0.2.10 LEN=73 TOS=0x00 PREC=0x00 TTL=255 ID=0 DF "
+                    "PROTO=UDP SPT=5353 DPT=5353 LEN=53")
+        for script in SCRIPTS:
+            with self.subTest(script=script.name):
+                out = sanitize(firewall + "\n", source=script)
+                self.assertIn("SRC=<IP> DST=<IP>", out)
+                for leaked in ("203.0.113.5", "192.0.2.10", "02:00:00:aa:bb:cc", "0123456789ab"):
+                    self.assertNotIn(leaked, out)
 
     def test_raw_mode_disables_masking(self):
         line = "BD Address: 02:00:00:00:00:01"
