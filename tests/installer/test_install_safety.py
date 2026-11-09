@@ -468,6 +468,40 @@ class UninstallTests(SafetyTestCase):
         self.assertTrue(self.fw.exists())
         self.assertIn("owned by package 'firmware-aic8800'", result.stdout)
 
+    def test_failed_dkms_remove_keeps_source_and_fails(self):
+        """A registration that could not be removed still needs its source tree."""
+        b = self.box
+        b.stub("dkms", '[ "$1" = status ] && echo "aic8800/1.0.0, 6.12.113+deb13-amd64, x86_64: installed"\n'
+                       '[ "$1" = remove ] && exit 1\nexit 0')
+        result = b.run_uninstaller()
+        self.assertFailed(result)
+        self.assertTrue((b.root / "usr/src/aic8800-1.0.0/dkms.conf").exists())
+        self.assertIn("keeping", result.stdout)
+        # The remaining steps still run.
+        self.assertFalse((b.root / "etc/udev/rules.d/aic.rules").exists())
+        self.assertFalse(self.fw.exists())
+
+    def test_only_the_failed_version_keeps_its_source(self):
+        b = self.box
+        b.write("usr/src/aic8800-1.0.1/dkms.conf", 'PACKAGE_NAME="aic8800"\n')
+        b.stub("dkms", '[ "$1" = status ] && printf "%s\\n" '
+                       '"aic8800/1.0.0, 6.12.113+deb13-amd64, x86_64: installed" '
+                       '"aic8800/1.0.1, 6.12.115+deb13-amd64, x86_64: installed"\n'
+                       '[ "$1" = remove ] && [ "$2" = aic8800/1.0.1 ] && exit 1\nexit 0')
+        result = b.run_uninstaller()
+        self.assertFailed(result)
+        self.assertFalse((b.root / "usr/src/aic8800-1.0.0").exists())
+        self.assertTrue((b.root / "usr/src/aic8800-1.0.1/dkms.conf").exists())
+
+    def test_unreadable_dkms_status_keeps_all_sources(self):
+        """If the registrations cannot be listed, no source tree is known to be unused."""
+        b = self.box
+        b.stub("dkms", '[ "$1" = status ] && exit 3\nexit 0')
+        result = b.run_uninstaller()
+        self.assertFailed(result)
+        self.assertTrue((b.root / "usr/src/aic8800-1.0.0/dkms.conf").exists())
+        self.assertNotIn("dkms remove", "\n".join(b.calls_to("dkms")))
+
     def test_rejects_unknown_option(self):
         result = self.box.run_uninstaller("--bogus")
         self.assertEqual(result.returncode, 2)
