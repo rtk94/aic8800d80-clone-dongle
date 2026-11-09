@@ -246,6 +246,50 @@ class FirmwareTests(SafetyTestCase):
         backups = list((self.box.root / "var/backups").glob("aic8800-firmware-*"))
         self.assertEqual(len(backups), 1)
 
+    def install_backups(self):
+        root = self.box.root / "var/backups"
+        return sorted(d.name for d in root.glob("aic8800-firmware-install-*") if d.is_dir())
+
+    def test_backup_is_named_for_the_installer_and_says_how_to_restore(self):
+        self.box.stub("dpkg", "exit 1")
+        result = self.box.run_function("install_firmware")
+        self.assertOk(result)
+        backups = self.install_backups()
+        self.assertEqual(len(backups), 1)
+        self.assertIn(f"Previous firmware saved in {self.box.root}/var/backups/{backups[0]}", result.stdout)
+        self.assertIn("To restore it", result.stdout)
+
+    def test_only_the_newest_three_install_backups_are_kept(self):
+        b = self.box
+        for day in (1, 2, 3, 4):
+            b.write(f"var/backups/aic8800-firmware-install-2026010{day}-000000/aic8800D80/x.bin", "x")
+        # Backups this installer cannot tell it made: uninstall.sh's, older installers'.
+        others = [b.write(f"var/backups/{name}/aic8800D80/x.bin", "x").parent.parent
+                  for name in ("aic8800-firmware-20260101-000000", "aic8800-firmware-20250101-000000")]
+        stray = b.write("var/backups/aic8800-firmware-install-notes", "not a directory")
+        b.stub("dpkg", "exit 1")
+        self.assertOk(b.run_function("install_firmware"))
+        backups = self.install_backups()
+        self.assertEqual(len(backups), 3, backups)
+        self.assertEqual(backups[:2], ["aic8800-firmware-install-20260103-000000",
+                                       "aic8800-firmware-install-20260104-000000"])
+        self.assertTrue((b.root / "var/backups" / backups[2] / "aic8800D80/old.bin").exists())
+        for path in others + [stray]:
+            self.assertTrue(path.exists(), path)
+
+    def test_new_backup_is_kept_even_if_older_names_sort_after_it(self):
+        b = self.box
+        for month in ("01", "02", "03"):
+            b.write(f"var/backups/aic8800-firmware-install-2099{month}01-000000/aic8800D80/x.bin", "x")
+        b.stub("dpkg", "exit 1")
+        self.assertOk(b.run_function("install_firmware"))
+        backups = self.install_backups()
+        self.assertEqual(len(backups), 3, backups)
+        self.assertNotIn("aic8800-firmware-install-20990101-000000", backups)
+        new = [n for n in backups if not n.startswith("aic8800-firmware-install-2099")]
+        self.assertEqual(len(new), 1, backups)
+        self.assertTrue((b.root / "var/backups" / new[0] / "aic8800D80/old.bin").exists())
+
 
 class UdevInstallTests(SafetyTestCase):
     def setUp(self):
