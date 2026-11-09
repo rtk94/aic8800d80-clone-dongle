@@ -26,7 +26,7 @@ STUBBED = [
     "apt-get", "apt-cache", "dnf", "yum", "pacman", "zypper",
     "dkms", "modprobe", "depmod", "udevadm",
     "update-initramfs", "dracut", "mkinitcpio",
-    "make", "mokutil", "dpkg", "rpm",
+    "make", "mokutil", "dpkg", "dpkg-query", "rpm",
 ]
 
 
@@ -275,29 +275,17 @@ class UdevInstallTests(SafetyTestCase):
 
 
 class KernelHeadersTests(SafetyTestCase):
-    def flavour(self, release):
-        self.box.stub("uname", f'echo "{release}"')
-        result = self.box.run_function("kernel_flavour")
-        self.assertOk(result)
-        return result.stdout.strip()
+    # Archive contents as of 2026-11: every kernel image metapackage has a
+    # headers metapackage of the same name, except debug packages.
+    AVAILABLE = ("linux-headers-generic", "linux-headers-generic-hwe-24.04",
+                 "linux-headers-amd64", "linux-headers-cloud-amd64")
 
-    def test_flavours(self):
-        cases = {
-            "6.12.113+deb13-amd64": "amd64",
-            "6.12.74+deb13+1-amd64": "amd64",
-            "6.12.90+deb13.1-amd64": "amd64",
-            "6.12.113+deb13-cloud-amd64": "cloud-amd64",
-            "6.1.0-27-amd64": "amd64",
-            "6.8.0-47-generic": "generic",
-            "6.6.51+rpt-rpi-v8": "rpi-v8",
-        }
-        for release, expected in cases.items():
-            with self.subTest(release=release):
-                self.assertEqual(self.flavour(release), expected)
-
-    def headers(self, manager, release, build_tree=True, apt_has_meta=True):
+    def headers(self, manager, release, build_tree=True, installed=()):
+        """installed: (dpkg status, package) pairs that dpkg-query reports."""
         self.box.stub("uname", f'echo "{release}"')
-        self.box.stub("apt-cache", "exit 0" if apt_has_meta else "exit 100")
+        listing = "".join(f"{status} {package}\\n" for status, package in installed)
+        self.box.stub("dpkg-query", f'printf "{listing}"\n[ -n "{listing}" ]')
+        self.box.stub("apt-cache", 'case "$2" in ' + "|".join(self.AVAILABLE) + ') exit 0 ;; esac\nexit 100')
         body = (
             f"kernel_build_tree_available() {{ return {0 if build_tree else 1}; }}\n"
             f"install_kernel_headers {manager}"
@@ -305,19 +293,43 @@ class KernelHeadersTests(SafetyTestCase):
         result = self.box.run_function(body)
         return result, self.box.calls_to({"apt": "apt-get"}.get(manager, manager))
 
-    def test_apt_installs_metapackage(self):
-        result, calls = self.headers("apt", "6.12.113+deb13-amd64")
+    def test_apt_follows_the_installed_hwe_track(self):
+        """Ubuntu's GA and HWE kernels are both "-generic"; the metapackage tells them apart."""
+        result, calls = self.headers("apt", "7.0.0-42-generic", installed=[
+            ("ii ", "linux-image-7.0.0-42-generic"), ("ii ", "linux-image-generic-hwe-24.04")])
         self.assertOk(result)
-        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(calls), 1, calls)
+        self.assertTrue(calls[0].endswith("install -y linux-headers-generic-hwe-24.04"), calls)
+
+    def test_apt_installs_headers_for_every_installed_track(self):
+        result, calls = self.headers("apt", "6.8.0-149-generic", installed=[
+            ("ii ", "linux-image-6.8.0-149-generic"), ("ii ", "linux-image-generic"),
+            ("ii ", "linux-image-generic-hwe-24.04")])
+        self.assertOk(result)
+        self.assertTrue(calls[0].endswith("install -y linux-headers-generic linux-headers-generic-hwe-24.04"), calls)
+
+    def test_apt_installs_debian_metapackage(self):
+        result, calls = self.headers("apt", "6.12.115+deb13.1-amd64", installed=[
+            ("ii ", "linux-image-6.12.115+deb13.1-amd64"), ("ii ", "linux-image-amd64")])
+        self.assertOk(result)
         self.assertTrue(calls[0].endswith("install -y linux-headers-amd64"), calls)
 
     def test_apt_adds_running_kernel_headers_when_build_tree_missing(self):
-        result, calls = self.headers("apt", "6.8.0-47-generic", build_tree=False)
+        result, calls = self.headers("apt", "6.8.0-47-generic", build_tree=False, installed=[
+            ("ii ", "linux-image-generic")])
         self.assertOk(result)
         self.assertTrue(calls[0].endswith("install -y linux-headers-6.8.0-47-generic linux-headers-generic"), calls)
 
+    def test_apt_skips_removed_unsigned_and_debug_packages(self):
+        result, calls = self.headers("apt", "6.12.115+deb13.1-amd64", installed=[
+            ("rc ", "linux-image-cloud-amd64"), ("ii ", "linux-image-unsigned-6.8.0-47-generic"),
+            ("ii ", "linux-image-amd64-dbg"), ("ii ", "linux-image-6.12.115+deb13.1-amd64")])
+        self.assertOk(result)
+        self.assertIn("No kernel headers metapackage", result.stdout)
+        self.assertEqual(calls, [])
+
     def test_apt_warns_without_metapackage(self):
-        result, calls = self.headers("apt", "6.12.113+deb13-amd64", apt_has_meta=False)
+        result, calls = self.headers("apt", "6.12.115+deb13.1-amd64")
         self.assertOk(result)
         self.assertIn("No kernel headers metapackage", result.stdout)
         self.assertEqual(calls, [])
