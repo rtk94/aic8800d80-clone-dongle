@@ -35,7 +35,7 @@ will not be switched automatically. Issue: [#4](https://github.com/rtk94/aic8800
 
 ### The `a69c:57xx` eject rules are untested here
 They come from upstream, and their syntax and intent are checked by tests, but no
-adapter that starts as `a69c:5721` to `a69c:572f` has been available.
+adapter that starts as `a69c:5721` to `a69c:572f` or `a69c:5732` has been available.
 Issue: [#5](https://github.com/rtk94/aic8800d80-clone-dongle/issues/5)
 
 ### Secure Boot is untested

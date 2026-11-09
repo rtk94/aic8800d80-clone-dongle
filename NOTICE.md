@@ -33,6 +33,7 @@ else is someone else's work, credited below.
 6. On 2026-11-02 upstream `main` at `2e75f88` was merged. Upstream had by then adopted
    parts of this repository's installer and udev fixes in its own PR
    [#131](https://github.com/shenmintao/aic8800d80/pull/131).
+7. On 2026-11-09 upstream `main` at `341ac7e` was merged.
 
 ## Where each part comes from
 
@@ -61,15 +62,16 @@ commands is in [docs/mode-switch.md](docs/mode-switch.md).
 ## Credits
 
 Upstream maintainer: **Shen Mintao**. Authors of non-merge commits in upstream's history
-up to `2e75f88`, by area:
+up to `341ac7e`, by area:
 
 - Driver: Shen Mintao, vorasilp, nomdetom, Lucas Kawatoko (the Linux 6.12.101
-  `set_monitor_channel` fix), MastaG (Linux 7.3 cfg80211 changes), YaQia,
-  xuxinchun1003, Vladislav Tatyanin, toor11
+  `set_monitor_channel` fix), MastaG (Linux 7.3 and 7.4 cfg80211 changes), YaQia,
+  xuxinchun1003, Vladislav Tatyanin, toor11, kalpak
 - Bluetooth through the standard `btusb` driver: bnister
   ([upstream PR #35](https://github.com/shenmintao/aic8800d80/pull/35))
 - Installer and DKMS configuration: Spacery, Shen Mintao, rtk94 (the log location, `33d33af`)
-- udev rules: Shen Mintao, Jonatas Fischer
+- udev rules: Shen Mintao, Jonatas Fischer, ianlintner (the `a69c:5732` rule, upstream
+  PR [#135](https://github.com/shenmintao/aic8800d80/pull/135))
 - Bazzite packaging: Nurmukhamed Artykaly, Shen Mintao, ccyuen1, heydemoura
 - Arch Linux notes: Wennington123
 
@@ -81,7 +83,7 @@ olamellberg's reverse engineering of the Windows driver
 
 ## What this repository adds
 
-All changes are on top of upstream `main` at `2e75f88`. Details and commits are in
+All changes are on top of upstream `main` at `341ac7e`. Details and commits are in
 [CHANGELOG.md](CHANGELOG.md).
 
 - **Fixes to upstream's scripts and rules**: the installer test-builds the driver

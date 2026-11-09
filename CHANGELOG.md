@@ -7,6 +7,13 @@ All notable changes to this repository. Upstream's own changes are in its histor
 
 ### Synced with upstream
 
+- Merged upstream `main` at `341ac7e` (2026-11-09) without conflicts. It brings an eject
+  rule for the BrosTrend AX900 + BT 5.4 in mass-storage mode (`a69c:5732`, upstream
+  [#135](https://github.com/shenmintao/aic8800d80/pull/135)), the Linux 7.4 cfg80211 key
+  type change ([#137](https://github.com/shenmintao/aic8800d80/pull/137)), and fdrv
+  firmware directory resolution that no longer depends on the Ubuntu platform macro
+  ([#140](https://github.com/shenmintao/aic8800d80/pull/140)). The udev test now covers
+  `a69c:5732`. Not yet run on hardware here.
 - Merged upstream `main` at `2e75f88` (2026-11-02). Upstream's PR
   [#131](https://github.com/shenmintao/aic8800d80/pull/131) adopted parts of the
   installer and udev fixes listed under "Fixed" (from upstream PRs #128 and #129): the
