@@ -53,7 +53,7 @@ class UdevTests(unittest.TestCase):
                 self.assertEqual(matching_rules(self.pandora(**changes)), [])
 
     def test_eject_only_on_add_of_a_whole_supported_disk(self):
-        for product in ("5721", "5722", "5723", "5724", "5725", "5726", "5727", "572a", "572c", "572f"):
+        for product in ("5721", "5722", "5723", "5724", "5725", "5726", "5727", "572a", "572c", "572f", "5732"):
             disk = {"ACTION": "add", "SUBSYSTEM": "block", "ENV{DEVTYPE}": "disk", "KERNEL": "sdb",
                     "ATTRS{idVendor}": "a69c", "ATTRS{idProduct}": product}
             with self.subTest(product=product):

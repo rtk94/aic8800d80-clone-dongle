@@ -24,7 +24,7 @@ Plug the adapter in and run `lsusb`.
 | `a69c:8d80` "AIC Wlan", becoming `a69c:8d81` "AIC 8800D80" about a second later | AIC8800D80 in loader mode, then running | **Tested** with one dongle |
 | the above plus `1111:1111` "FLASH" and a `214b:7250` "USB2.0 HUB" | a dongle with an internal hub and a separate flash disk holding the Windows installer (see [docs/mode-switch.md](docs/mode-switch.md)) | **Tested**: this is the maintainer's dongle; the flash disk is normal and needs nothing |
 | `1111:1111` with product `88M80`, and no `a69c` device | a "Pandora 88M80" clone in mass-storage mode; needs a vendor command to switch | Switch configuration from upstream; **untested here** |
-| `a69c:5721` to `a69c:572f` | mass-storage mode of other AIC adapters (the rule names suggest Tenda, UGREEN and Cudy units) | eject rule from upstream; **untested here** |
+| `a69c:5721` to `a69c:572f`, `a69c:5732` | mass-storage mode of other AIC adapters (the rule names suggest Tenda, UGREEN, Cudy and BrosTrend units) | eject rule from upstream; **untested here** |
 | another `a69c:`, `368b:`, `2357:`, `2604:` or `3625:` ID | an AIC8800-family adapter the driver's ID tables list | matched by the driver; **untested here** |
 
 The full list of IDs the modules match is in
@@ -223,7 +223,7 @@ the driver will bind; it does not mean the adapter has been tested.
   `3625:0110`
 - `aic_zlp_quirk` (Bluetooth workaround): `368b:8d81`
 - udev rules (`aic.rules`): `a69c:5721` to `a69c:5727`, `a69c:572a`, `a69c:572c`,
-  `a69c:572f` (ejected from mass-storage mode) and `1111:1111` with product `88M80`
+  `a69c:572f`, `a69c:5732` (ejected from mass-storage mode) and `1111:1111` with product `88M80`
   (mode switch)
 
 ## Platform notes
