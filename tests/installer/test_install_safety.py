@@ -254,14 +254,16 @@ class UdevInstallTests(SafetyTestCase):
         self.box.write("aic.rules", "# AIC8800 rules\n", base=self.box.src)
         self.box.write("usb_modeswitch/1111_1111", "# AIC8800D80\n", base=self.box.src)
 
-    def test_rules_go_to_etc_and_stale_copies_are_removed(self):
-        stale = self.box.write("usr/lib/udev/rules.d/aic.rules", "# AIC8800 old\n")
+    def test_rules_go_to_etc_and_old_copies_are_left_alone(self):
+        """/etc shadows same-named rules in /usr/lib and /lib, and a copy there
+        may belong to a package, so the installer does not delete it."""
+        old = self.box.write("usr/lib/udev/rules.d/aic.rules", "# AIC8800 old\n")
         foreign = self.box.write("lib/udev/rules.d/aic.rules", "# someone else's rules\n")
         result = self.box.run_function("install_firmware")
         self.assertOk(result)
         self.assertTrue((self.box.root / "etc/udev/rules.d/aic.rules").exists())
         self.assertTrue((self.box.root / "etc/usb_modeswitch.d/1111:1111").exists())
-        self.assertFalse(stale.exists())
+        self.assertEqual(old.read_text(), "# AIC8800 old\n")
         self.assertTrue(foreign.exists())
 
     def test_trigger_is_limited_to_1111_devices(self):
@@ -501,6 +503,21 @@ class UninstallTests(SafetyTestCase):
         self.assertFailed(result)
         self.assertTrue((b.root / "usr/src/aic8800-1.0.0/dkms.conf").exists())
         self.assertNotIn("dkms remove", "\n".join(b.calls_to("dkms")))
+
+    def test_package_owned_rules_and_modeswitch_config_are_kept(self):
+        """A marker string alone does not make a file this project's to delete."""
+        b = self.box
+        packaged = b.write("usr/lib/udev/rules.d/aic.rules", "# AIC8800 rules from a package\n")
+        b.stub("dpkg", '[ "$1" = -S ] || exit 1\n'
+                       'case "$2" in /usr/lib/udev/rules.d/aic.rules|/etc/usb_modeswitch.d/1111:1111)\n'
+                       '  echo "aic8800-dkms: $2"; exit 0 ;;\nesac\nexit 1')
+        result = b.run_uninstaller()
+        self.assertOk(result)
+        self.assertTrue(packaged.exists())
+        self.assertTrue((b.root / "etc/usb_modeswitch.d/1111:1111").exists())
+        self.assertIn("owned by package 'aic8800-dkms'", result.stdout)
+        # The installer's own, unowned copy is still removed.
+        self.assertFalse((b.root / "etc/udev/rules.d/aic.rules").exists())
 
     def test_rejects_unknown_option(self):
         result = self.box.run_uninstaller("--bogus")
