@@ -38,6 +38,12 @@ All notable changes to this repository. Upstream's own changes are in its histor
 
 ### Fixed
 
+- `install.sh` keeps at most three firmware backups of its own. Its backups are now
+  named `/var/backups/aic8800-firmware-install-<date>/`; after making one it removes
+  all but the two newest older ones with that name, and prints where the backup is and
+  how to restore it. Backups from `uninstall.sh` and from earlier installers
+  (`aic8800-firmware-<date>`) are not removed, since nothing shows which script made
+  them. Upstream's reviewer asked for this on shenmintao/aic8800d80#128.
 - `install.sh` no longer leaves a new copy of the firmware in `/var/backups` on every
   reinstall. An installed `aic8800*` directory that is identical to the one in this
   repository is replaced without a backup; anything that differs, or has extra files,
